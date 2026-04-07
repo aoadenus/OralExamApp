@@ -241,7 +241,9 @@ function Dashboard({
     <Page title="🏠 Dashboard" eyebrow="✨ Solo oral exam practice" action={<PrimaryButton onClick={() => navigate('/mock-oral/session')}>🎤 Start Mock Oral</PrimaryButton>}>
 
       {/* Bakery ERD Illustration Banner */}
-      <BakeryIllustration />
+      <div className="hidden md:block">
+        <BakeryIllustration />
+      </div>
       <MilestoneCelebration milestone={milestone} onDismiss={progressStore.acknowledgeMilestone} />
 
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
@@ -250,13 +252,15 @@ function Dashboard({
             <div>
               <p className="text-sm font-semibold uppercase text-pink-500">🧁 Overall readiness</p>
               <h2 className="mt-2 text-5xl font-extrabold text-slate-950">{percent(progress.overallReadiness)}</h2>
-              <p className="mt-3 max-w-2xl text-slate-600">
+              <p className="mt-3 hidden max-w-2xl text-slate-600 sm:block">
                 Practice is weighted across <strong>41 entities</strong> 🏷️ and <strong>46 ERD relationship rules</strong> 🔗. New items start at zero until you drill them.
               </p>
             </div>
-            <ReadinessRing value={progress.overallReadiness} />
+            <div className="hidden sm:block">
+              <ReadinessRing value={progress.overallReadiness} />
+            </div>
           </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-4">
+          <div className="mt-6 hidden gap-3 sm:grid sm:grid-cols-4">
             <Metric label="🎯 Attempted" value={String(analytics.attemptedCount)} />
             <Metric label="⭐ Mastered" value={String(analytics.masteredCount)} />
             <Metric label="🔥 Streak" value={String(progress.streak)} />
@@ -288,22 +292,24 @@ function Dashboard({
         </Card>
       </div>
 
-      <SectionHeader title="🗂️ Domain mastery" />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {analytics.domainProgress.map(({ domain, mastery }) => (
-          <button key={domain.id} onClick={() => navigate(`/study/domains/${domain.id}`)} className="text-left">
-            <Card className={`h-full card-hover-magic ${mastery >= 0.75 ? 'border-green-200' : mastery >= 0.4 ? 'border-amber-200' : 'border-red-100'}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-950">{domainEmoji(domain.name)} {domain.name}</h3>
-                  <p className="mt-2 text-sm text-slate-600">{domain.description}</p>
+      <div className="hidden md:block">
+        <SectionHeader title="🗂️ Domain mastery" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {analytics.domainProgress.map(({ domain, mastery }) => (
+            <button key={domain.id} onClick={() => navigate(`/study/domains/${domain.id}`)} className="text-left">
+              <Card className={`h-full card-hover-magic ${mastery >= 0.75 ? 'border-green-200' : mastery >= 0.4 ? 'border-amber-200' : 'border-red-100'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-950">{domainEmoji(domain.name)} {domain.name}</h3>
+                    <p className="mt-2 text-sm text-slate-600">{domain.description}</p>
+                  </div>
+                  <ProgressBadge value={mastery} />
                 </div>
-                <ProgressBadge value={mastery} />
-              </div>
-              <ProgressBar value={mastery} className="mt-5" />
-            </Card>
-          </button>
-        ))}
+                <ProgressBar value={mastery} className="mt-5" />
+              </Card>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -614,7 +620,10 @@ function StudyFlashcards({ progressStore }: { progressStore: ReturnType<typeof u
               {isEntityCard ? (current as Entity).name : relationshipLabel(current as Relationship)}
             </h2>
           </div>
-          <ProgressBadge value={getItemProgress(progressStore.progress, itemId).mastery} />
+          <div className="flex flex-wrap items-center gap-2">
+            <FavoriteButton itemId={itemId} progressStore={progressStore} />
+            <ProgressBadge value={getItemProgress(progressStore.progress, itemId).mastery} />
+          </div>
         </div>
         {!revealed ? (
           <div className="mt-8 rounded-xl border-2 border-dashed border-pink-300 bg-white/80 p-6 text-center">
@@ -716,6 +725,7 @@ function VisualErdPractice({ progressStore }: { progressStore: ReturnType<typeof
             </div>
           </div>
           <div className="flex flex-wrap gap-2 xl:justify-end">
+            <FavoriteButton itemId={currentId} progressStore={progressStore} />
             <PrimaryButton onClick={() => setRevealed(true)}>Reveal on ERD</PrimaryButton>
             <SecondaryButton onClick={() => next('correct')}>Found it</SecondaryButton>
             <SecondaryButton onClick={() => next('partial')}>Needed hint</SecondaryButton>
@@ -723,8 +733,10 @@ function VisualErdPractice({ progressStore }: { progressStore: ReturnType<typeof
           </div>
         </div>
         {revealed && (
-          <Card className="mt-5 border-green-300 bg-green-50 animate-correct-pulse">
-            <FeedbackBanner result="correct" />
+          <Card className="mt-5 border-blue-200 bg-blue-50">
+            <p className="text-sm font-semibold uppercase text-blue-700">ERD location revealed</p>
+            <h3 className="mt-1 text-xl font-bold text-slate-950">Did you find the green box before revealing?</h3>
+            <p className="mt-2 text-slate-700">Use the buttons above to score yourself: Found it, Needed hint, or Missed it.</p>
             {mode === 'entity' ? (
               <EntitySummary entity={entityTarget} compact />
             ) : (
@@ -1630,6 +1642,8 @@ function MockOralSession({
             notes={entityAnswer}
             setNotes={setEntityAnswer}
             entityIds={entity ? [entity.id] : []}
+            favoriteItemId={entity?.id}
+            progressStore={progressStore}
           />
           <ExamQuestionPanel
             title="Phase 2: Hard relationship question"
@@ -1637,6 +1651,8 @@ function MockOralSession({
             notes={relationshipAnswer}
             setNotes={setRelationshipAnswer}
             entityIds={relationship ? relationshipFocusEntityIds(relationship) : []}
+            favoriteItemId={relationship?.id}
+            progressStore={progressStore}
           />
         </div>
       ) : (
@@ -1650,6 +1666,8 @@ function MockOralSession({
             setNotes={setEntityAnswer}
             grade={entityGrade}
             entityIds={entity ? [entity.id] : []}
+            favoriteItemId={entity?.id}
+            progressStore={progressStore}
           />
           <MockQuestionPanel
             title={strict ? 'Self-score: Hard relationship question' : 'Phase 2: Hard relationship question'}
@@ -1660,6 +1678,8 @@ function MockOralSession({
             setNotes={setRelationshipAnswer}
             grade={relationshipGrade}
             entityIds={relationship ? relationshipFocusEntityIds(relationship) : []}
+            favoriteItemId={relationship?.id}
+            progressStore={progressStore}
           />
         </div>
       )}
@@ -1915,20 +1935,29 @@ function ExamQuestionPanel({
   notes,
   setNotes,
   entityIds,
+  favoriteItemId,
+  progressStore,
 }: {
   title: string;
   question: OralQuestion;
   notes: string;
   setNotes: (value: string) => void;
   entityIds: string[];
+  favoriteItemId?: string;
+  progressStore: ReturnType<typeof useProgressStore>;
 }) {
   return (
     <Card className="border-red-200 bg-red-50">
       <div className="mb-5">
         <ErdFocusPanel entityIds={entityIds} title="Exam visual context" compact />
       </div>
-      <p className="text-sm font-semibold uppercase text-red-700">{title}</p>
-      <h2 className="mt-2 text-2xl font-bold text-slate-950">{question.prompt}</h2>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold uppercase text-red-700">{title}</p>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">{question.prompt}</h2>
+        </div>
+        {favoriteItemId && <FavoriteButton itemId={favoriteItemId} progressStore={progressStore} />}
+      </div>
       <p className="mt-4 text-slate-700">
         Speak the answer out loud. Do not reveal answers or use hints in this phase. Use the box only for short notes if it helps you self-score later.
       </p>
@@ -1948,6 +1977,8 @@ function MockQuestionPanel({
   setNotes,
   grade,
   entityIds,
+  favoriteItemId,
+  progressStore,
 }: {
   title: string;
   question: OralQuestion;
@@ -1957,6 +1988,8 @@ function MockQuestionPanel({
   setNotes: (value: string) => void;
   grade: GradeResult | null;
   entityIds: string[];
+  favoriteItemId?: string;
+  progressStore: ReturnType<typeof useProgressStore>;
 }) {
   const [showAnswer, setShowAnswer] = useState(false);
 
@@ -1965,8 +1998,13 @@ function MockQuestionPanel({
       <div className="mb-5">
         <ErdFocusPanel entityIds={entityIds} title="Mock oral visual context" compact />
       </div>
-      <p className="text-sm font-semibold uppercase text-slate-500">{title}</p>
-      <h2 className="mt-2 text-2xl font-bold text-slate-950">{question.prompt}</h2>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold uppercase text-slate-500">{title}</p>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">{question.prompt}</h2>
+        </div>
+        {favoriteItemId && <FavoriteButton itemId={favoriteItemId} progressStore={progressStore} />}
+      </div>
       {followUp && (
         <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
           <p className="text-sm font-semibold uppercase text-blue-700">Professor follow-up</p>
@@ -2198,6 +2236,8 @@ function HintStepper({ hints }: { hints: string[] }) {
 
 function SayThisOutLoudCard({ lines, title = 'Say this out loud' }: { lines: string[]; title?: string }) {
   const cleanLines = lines.filter(Boolean);
+  const [speaking, setSpeaking] = useState(false);
+  const [paused, setPaused] = useState(false);
   if (cleanLines.length === 0) return null;
 
   function readAloud() {
@@ -2209,14 +2249,46 @@ function SayThisOutLoudCard({ lines, title = 'Say this out loud' }: { lines: str
     const utterance = new SpeechSynthesisUtterance(cleanLines.join(' '));
     utterance.rate = 0.9;
     utterance.pitch = 1;
+    utterance.onend = () => {
+      setSpeaking(false);
+      setPaused(false);
+    };
+    utterance.onerror = () => {
+      setSpeaking(false);
+      setPaused(false);
+    };
+    setSpeaking(true);
+    setPaused(false);
     window.speechSynthesis.speak(utterance);
+  }
+
+  function pauseOrResume() {
+    if (!('speechSynthesis' in window)) return;
+    if (paused) {
+      window.speechSynthesis.resume();
+      setPaused(false);
+    } else {
+      window.speechSynthesis.pause();
+      setPaused(true);
+    }
+  }
+
+  function stopReading() {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    setSpeaking(false);
+    setPaused(false);
   }
 
   return (
     <div className="mt-5 rounded-lg border border-green-200 bg-green-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-lg font-bold text-slate-950">{title}</h3>
-        <SecondaryButton onClick={readAloud}>Read it to me</SecondaryButton>
+        <div className="flex flex-wrap gap-2">
+          <SecondaryButton onClick={readAloud}>{speaking ? 'Restart Audio' : 'Read it to me'}</SecondaryButton>
+          {speaking && <SecondaryButton onClick={pauseOrResume}>{paused ? 'Resume' : 'Pause'}</SecondaryButton>}
+          {speaking && <SecondaryButton onClick={stopReading}>Stop</SecondaryButton>}
+        </div>
       </div>
       <ul className="mt-3 space-y-2 text-slate-800">
         {cleanLines.map((line) => (
@@ -2238,9 +2310,19 @@ function FavoriteButton({
 }) {
   const isFavorite = progressStore.progress.favoriteItemIds?.includes(itemId) ?? false;
   return (
-    <SecondaryButton onClick={() => progressStore.toggleFavorite(itemId)}>
-      {isFavorite ? 'Unstar Hard Item' : 'Star Hard Item'}
-    </SecondaryButton>
+    <button
+      type="button"
+      onClick={() => progressStore.toggleFavorite(itemId)}
+      className={`rounded-lg border px-4 py-2 text-sm font-bold transition ${
+        isFavorite
+          ? 'border-yellow-400 bg-yellow-300 text-yellow-950 shadow-[0_0_0_3px_rgba(250,204,21,0.22)]'
+          : 'border-yellow-200 bg-white text-slate-700 hover:border-yellow-400 hover:bg-yellow-50'
+      }`}
+      aria-pressed={isFavorite}
+      title={isFavorite ? 'Remove from starred questions' : 'Add to starred questions'}
+    >
+      {isFavorite ? '★ Starred' : '☆ Star Question'}
+    </button>
   );
 }
 
@@ -2286,8 +2368,11 @@ function ErdFocusPanel({
   const centerY = (minY + maxY) / 2;
   const spanX = Math.max(maxX - minX, 10);
   const spanY = Math.max(maxY - minY, 8);
-  const scale = Math.min(10, Math.max(compact ? 3.5 : 3, Math.min(120 / spanX, 90 / spanY)));
+  const autoScale = Math.min(10, Math.max(compact ? 3.5 : 3, Math.min(120 / spanX, 90 / spanY)));
+  const [focusZoom, setFocusZoom] = useState(autoScale);
+  const [visualOpen, setVisualOpen] = useState(true);
   const heightClass = compact ? 'h-56' : 'h-72';
+  const focusKey = entityIds.join('|');
 
   function centerFocusViewer() {
     const viewer = viewerRef.current;
@@ -2297,14 +2382,18 @@ function ErdFocusPanel({
   }
 
   useEffect(() => {
-    if (!hasFocus) return;
+    setFocusZoom(autoScale);
+  }, [autoScale, focusKey]);
+
+  useEffect(() => {
+    if (!hasFocus || !visualOpen) return;
     const frame = window.requestAnimationFrame(centerFocusViewer);
     const fallback = window.setTimeout(centerFocusViewer, 250);
     return () => {
       window.cancelAnimationFrame(frame);
       window.clearTimeout(fallback);
     };
-  }, [hasFocus, centerX, centerY, scale, entityIds.join('|')]);
+  }, [hasFocus, visualOpen, centerX, centerY, focusZoom, focusKey]);
 
   if (!hasFocus) return null;
 
@@ -2315,12 +2404,34 @@ function ErdFocusPanel({
           <p className="text-sm font-semibold uppercase text-pink-600">{title}</p>
           <p className="text-sm text-slate-600">Auto-centered on the ERD section. Scroll inside the box if you want more context.</p>
         </div>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
-          {focusHotspots.length} table(s) • {Math.round(scale * 100)}% zoom
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
+            {focusHotspots.length} table(s) • {Math.round(focusZoom * 100)}% zoom
+          </span>
+          <SecondaryButton onClick={() => setVisualOpen((value) => !value)}>
+            {visualOpen ? 'Hide ERD Clue' : 'Show ERD Clue'}
+          </SecondaryButton>
+        </div>
       </div>
-      <div ref={viewerRef} className={`${heightClass} overflow-auto rounded-lg border border-pink-100 bg-white`}>
-        <div className="relative" style={{ width: `${scale * 100}%`, minWidth: '100%' }}>
+      {visualOpen ? (
+        <>
+          <div className="mb-3 rounded-lg border border-pink-100 bg-white/80 p-3">
+            <div className="flex items-center justify-between gap-3 text-sm font-semibold text-slate-700">
+              <span>Zoom: {Math.round(focusZoom * 100)}%</span>
+              <button type="button" className="text-pink-700 underline" onClick={centerFocusViewer}>Re-center</button>
+            </div>
+            <input
+              className="mt-2 block w-full"
+              type="range"
+              min="1.5"
+              max="10"
+              step="0.25"
+              value={focusZoom}
+              onChange={(event) => setFocusZoom(Number(event.target.value))}
+            />
+          </div>
+          <div ref={viewerRef} className={`${heightClass} overflow-auto rounded-lg border border-pink-100 bg-white`}>
+        <div className="relative" style={{ width: `${focusZoom * 100}%`, minWidth: '100%' }}>
           <img
             src={erdImageSrc}
             alt="Focused ERD section"
@@ -2332,7 +2443,13 @@ function ErdFocusPanel({
             <ErdFocusHotspotBox key={hotspot.entityId} hotspot={hotspot} />
           ))}
         </div>
-      </div>
+          </div>
+        </>
+      ) : (
+        <div className="rounded-lg border border-dashed border-pink-200 bg-white/80 p-4 text-sm text-slate-600">
+          ERD clue hidden. Use this like a hint: try answering first, then tap Show ERD Clue if you need the diagram.
+        </div>
+      )}
     </Card>
   );
 }
@@ -3186,8 +3303,13 @@ function QuickDrills({ progressStore }: { progressStore: ReturnType<typeof usePr
         <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
           <ErdFocusPanel entityIds={prompt.entityIds} title="Visual clue" />
           <Card>
-            <p className="text-sm font-semibold uppercase text-pink-600">{prompt.category}</p>
-            <h2 className="mt-2 text-2xl font-bold text-slate-950">{prompt.prompt}</h2>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold uppercase text-pink-600">{prompt.category}</p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-950">{prompt.prompt}</h2>
+              </div>
+              <FavoriteButton itemId={prompt.itemId} progressStore={progressStore} />
+            </div>
             <p className="mt-3 text-sm text-slate-600">Choose exactly one answer. The app grades this immediately.</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {prompt.choices.map((choice) => (
@@ -3333,7 +3455,7 @@ function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof u
   }
 
   return (
-    <Page title="Free Recall" eyebrow="Exact fields from memory">
+    <Page title="Free Recall" eyebrow="Exact fields from memory" action={<FavoriteButton itemId={entity.id} progressStore={progressStore} />}>
       <Card>
         <div className="mb-5">
           <ErdFocusPanel entityIds={[entity.id]} title="Visual recall context" compact />
@@ -3499,9 +3621,12 @@ function currentUnacknowledgedMilestone(progress: ProgressState) {
 
 function examCountdownLabel(examDate?: string) {
   if (!examDate) return 'Set your exam date in Settings to see the countdown.';
-  const target = new Date(`${examDate}T23:59:59`);
+  const [year, month, day] = examDate.split('-').map(Number);
+  const target = new Date(year, (month ?? 1) - 1, day ?? 1);
   if (Number.isNaN(target.getTime())) return 'Set your exam date in Settings to see the countdown.';
-  const days = Math.ceil((target.getTime() - Date.now()) / 86_400_000);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((target.getTime() - today.getTime()) / 86_400_000);
   if (days < 0) return 'Exam date has passed. Update it in Settings for the next oral exam.';
   if (days === 0) return 'Exam day is today. Run strict mock oral and review starred items.';
   if (days === 1) return '1 day left. Focus on weak areas and bridge entities.';
