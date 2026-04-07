@@ -233,12 +233,16 @@ function Dashboard({
   const recent = progress.mockOrals.slice(0, 3);
   const todayMs = calculateTodayStudyTime(progress.studySessions);
   const totalHours = (progress.totalStudyTimeMs / 3_600_000).toFixed(1);
+  const milestone = currentUnacknowledgedMilestone(progress);
+  const dailyGoalMinutes = progress.settings.dailyGoalMinutes ?? 15;
+  const dailyGoalProgress = Math.min(1, todayMs / Math.max(dailyGoalMinutes * 60_000, 1));
 
   return (
     <Page title="🏠 Dashboard" eyebrow="✨ Solo oral exam practice" action={<PrimaryButton onClick={() => navigate('/mock-oral/session')}>🎤 Start Mock Oral</PrimaryButton>}>
 
       {/* Bakery ERD Illustration Banner */}
       <BakeryIllustration />
+      <MilestoneCelebration milestone={milestone} onDismiss={progressStore.acknowledgeMilestone} />
 
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-pink-100 bg-gradient-to-br from-white to-pink-50/40">
@@ -267,6 +271,15 @@ function Dashboard({
               : '🚀 Start with Entity Mastery, then run a mock oral!'}
           </p>
           <p className="mt-2 text-sm text-slate-500">⏰ Total study time: {totalHours}h</p>
+          <div className="mt-4 rounded-lg border border-purple-100 bg-white/80 p-3">
+            <p className="font-semibold text-slate-950">Exam countdown</p>
+            <p className="mt-1 text-sm text-slate-600">{examCountdownLabel(progress.settings.examDate)}</p>
+            <div className="mt-3 flex items-center justify-between gap-3 text-sm text-slate-600">
+              <span>Daily goal: {formatStudyTime(todayMs)} / {dailyGoalMinutes}m</span>
+              <span>{percent(dailyGoalProgress)}</span>
+            </div>
+            <ProgressBar value={dailyGoalProgress} className="mt-2" />
+          </div>
           <div className="mt-5 flex flex-wrap gap-2">
             <SecondaryButton onClick={() => navigate('/practice/quick-drills')}>⚡ Quick Drills</SecondaryButton>
             <SecondaryButton onClick={() => navigate('/practice/free-recall')}>✍️ Free Recall</SecondaryButton>
@@ -900,7 +913,7 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
   }
 
   return (
-    <Page title="Entity Mastery" eyebrow="41 entities">
+    <Page title="Entity Mastery" eyebrow="41 entities" action={<FavoriteButton itemId={entity.id} progressStore={progressStore} />}>
       <DrillCard
         label={`${getDomainName(entity.domainId)} - ${masteryLabel(getItemProgress(progressStore.progress, entity.id).mastery)}`}
         title={entityQuestion(entity, mode)}
@@ -913,6 +926,7 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
         <div className="mb-5">
           <ErdFocusPanel entityIds={[entity.id]} title="Visual context" compact />
         </div>
+        <HintStepper hints={entityHints(entity)} />
         {isAutoChecked ? (
           <AutoEntityDrill
             key={`${entity.id}-${mode}`}
@@ -934,6 +948,7 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
             {purposeGrade && (
               <>
                 <GradeReview grade={purposeGrade} title="Entity answer check" />
+                <ConfidenceRisk result={purposeGrade.result} confidence={confidence} />
                 <EntityAnswer entity={entity} mode={mode} />
               </>
             )}
@@ -1002,6 +1017,7 @@ function AutoEntityDrill({
       {result && (
         <Card className={`mt-5 ${resultFeedbackClass(result)}`}>
           <FeedbackBanner result={result} />
+          <ConfidenceRisk result={result} confidence={confidence} />
           <p className="font-semibold">{result === 'correct' ? 'Correct' : result === 'partial' ? 'Partially correct' : 'Incorrect'}</p>
           <p className="mt-2 text-slate-700">
             Expected: {correct.map((value) => (mode === 'domain' ? getDomainName(value) : value)).join(', ')}
@@ -1034,7 +1050,16 @@ function EntityDetail({
   if (!entity) return <NotFound navigate={navigate} />;
 
   return (
-    <Page title={entity.name} eyebrow={getDomainName(entity.domainId)} action={<SecondaryButton onClick={() => navigate('/study/entities')}>Practice Entities</SecondaryButton>}>
+    <Page
+      title={entity.name}
+      eyebrow={getDomainName(entity.domainId)}
+      action={
+        <div className="flex flex-wrap gap-2">
+          <FavoriteButton itemId={entity.id} progressStore={progressStore} />
+          <SecondaryButton onClick={() => navigate('/study/entities')}>Practice Entities</SecondaryButton>
+        </div>
+      }
+    >
       <EntitySummary entity={entity} progress={getItemProgress(progressStore.progress, entity.id).mastery} />
     </Page>
   );
@@ -1048,7 +1073,7 @@ function RelationshipBuilder({ progressStore }: { progressStore: ReturnType<type
   }
 
   return (
-    <Page title="Business Rule Builder" eyebrow="46 bi-directional rules">
+    <Page title="Business Rule Builder" eyebrow="46 bi-directional rules" action={<FavoriteButton itemId={relationship.id} progressStore={progressStore} />}>
       <RelationshipQuestionCard
         key={relationship.id}
         relationship={relationship}
@@ -1071,7 +1096,16 @@ function RelationshipDetail({
   const relationship = relationshipById[relationshipId];
   if (!relationship) return <NotFound navigate={navigate} />;
   return (
-    <Page title={relationshipLabel(relationship)} eyebrow={getDomainName(relationship.domainId)} action={<SecondaryButton onClick={() => navigate('/study/relationships')}>Practice Rules</SecondaryButton>}>
+    <Page
+      title={relationshipLabel(relationship)}
+      eyebrow={getDomainName(relationship.domainId)}
+      action={
+        <div className="flex flex-wrap gap-2">
+          <FavoriteButton itemId={relationship.id} progressStore={progressStore} />
+          <SecondaryButton onClick={() => navigate('/study/relationships')}>Practice Rules</SecondaryButton>
+        </div>
+      }
+    >
       <RelationshipSummary relationship={relationship} mastery={getItemProgress(progressStore.progress, relationship.id).mastery} />
     </Page>
   );
@@ -1125,6 +1159,7 @@ function RelationshipQuestionCard({
       <div className="mb-5">
         <ErdFocusPanel entityIds={relationshipFocusEntityIds(relationship)} title="Visual relationship context" compact />
       </div>
+      <HintStepper hints={relationshipHints(relationship)} />
       <div className="grid gap-3 md:grid-cols-3">
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Cardinality</span>
@@ -1158,6 +1193,7 @@ function RelationshipQuestionCard({
       {grade && (
         <>
           <GradeReview grade={grade} title="Business rule check" />
+          <ConfidenceRisk result={grade.result} confidence={confidence} />
           <RelationshipAnswer relationship={relationship} />
         </>
       )}
@@ -1187,7 +1223,7 @@ function FkLogicTrainer({ progressStore }: { progressStore: ReturnType<typeof us
   }
 
   return (
-    <Page title="FK Logic Trainer" eyebrow="Placement and justification">
+    <Page title="FK Logic Trainer" eyebrow="Placement and justification" action={<FavoriteButton itemId={relationship.id} progressStore={progressStore} />}>
       <DrillCard
         label={relationship.cardinality}
         title={`Where does the FK or bridge belong for ${relationshipLabel(relationship)}?`}
@@ -1196,6 +1232,7 @@ function FkLogicTrainer({ progressStore }: { progressStore: ReturnType<typeof us
         <div className="mb-5">
           <ErdFocusPanel entityIds={relationshipFocusEntityIds(relationship)} title="Visual FK context" compact />
         </div>
+        <HintStepper hints={relationshipHints(relationship)} />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {choices.map((choice) => (
             <button
@@ -1212,6 +1249,7 @@ function FkLogicTrainer({ progressStore }: { progressStore: ReturnType<typeof us
         {selected && (
           <Card className={`mt-5 ${resultFeedbackClass(selected === expected ? 'correct' : 'incorrect')}`}>
             <FeedbackBanner result={selected === expected ? 'correct' : 'incorrect'} />
+            <ConfidenceRisk result={selected === expected ? 'correct' : 'incorrect'} confidence={confidence} />
             <p className="font-semibold">{selected === expected ? 'Correct placement' : 'Check the placement'}</p>
             <p className="mt-2 text-slate-700">
               Expected: <Code>{getEntityName(expected)}</Code>. {relationship.oralCue}
@@ -1242,7 +1280,7 @@ function AssociativeEntityDrill({ progressStore }: { progressStore: ReturnType<t
   }
 
   return (
-    <Page title="Associative Entity Drill" eyebrow="Six bridge tables">
+    <Page title="Associative Entity Drill" eyebrow="Six bridge tables" action={<FavoriteButton itemId={bridge.id} progressStore={progressStore} />}>
       <DrillCard
         label="M:N resolution"
         title={`Which bridge resolves ${sourceNames}?`}
@@ -1251,6 +1289,7 @@ function AssociativeEntityDrill({ progressStore }: { progressStore: ReturnType<t
         <div className="mb-5">
           <ErdFocusPanel entityIds={bridgeFocusEntityIds(bridge)} title="Visual bridge context" compact />
         </div>
+        <HintStepper hints={bridgeHints(bridge)} />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {associativeEntities.map((candidate) => (
             <button
@@ -1267,6 +1306,7 @@ function AssociativeEntityDrill({ progressStore }: { progressStore: ReturnType<t
         {selected && (
           <Card className={`mt-5 ${resultFeedbackClass(selected === bridge.id ? 'correct' : 'incorrect')}`}>
             <FeedbackBanner result={selected === bridge.id ? 'correct' : 'incorrect'} />
+            <ConfidenceRisk result={selected === bridge.id ? 'correct' : 'incorrect'} confidence={confidence} />
             <p className="font-semibold">{selected === bridge.id ? 'Correct bridge' : `Expected ${bridge.name}`}</p>
             <BridgeSummary bridge={bridge} />
             <ConfidenceSelector value={confidence} onChange={setConfidence} />
@@ -1293,7 +1333,16 @@ function AssociativeDetail({
   const bridge = associativeById[entityId];
   if (!bridge) return <NotFound navigate={navigate} />;
   return (
-    <Page title={bridge.name} eyebrow="Associative entity" action={<SecondaryButton onClick={() => navigate('/study/associative-entities')}>Practice Bridges</SecondaryButton>}>
+    <Page
+      title={bridge.name}
+      eyebrow="Associative entity"
+      action={
+        <div className="flex flex-wrap gap-2">
+          <FavoriteButton itemId={bridge.id} progressStore={progressStore} />
+          <SecondaryButton onClick={() => navigate('/study/associative-entities')}>Practice Bridges</SecondaryButton>
+        </div>
+      }
+    >
       <Card>
         <ProgressBar value={getItemProgress(progressStore.progress, bridge.id).mastery} />
         <BridgeSummary bridge={bridge} />
@@ -1333,7 +1382,7 @@ function SubtypeDrill({ progressStore }: { progressStore: ReturnType<typeof useP
   }
 
   return (
-    <Page title="Subtype Drill" eyebrow="Two subtype relationships">
+    <Page title="Subtype Drill" eyebrow="Two subtype relationships" action={<FavoriteButton itemId={subtype.subtypeId} progressStore={progressStore} />}>
       <DrillCard
         label="Subtype relationship"
         title={`Explain ${getEntityName(subtype.subtypeId)} as a subtype of ${getEntityName(subtype.supertypeId)}.`}
@@ -1342,6 +1391,7 @@ function SubtypeDrill({ progressStore }: { progressStore: ReturnType<typeof useP
         <div className="mb-5">
           <ErdFocusPanel entityIds={[subtype.subtypeId, subtype.supertypeId]} title="Visual subtype context" compact />
         </div>
+        <HintStepper hints={subtypeHints(subtype)} />
         <div className="grid gap-3 md:grid-cols-3">
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Subtype</span>
@@ -1370,6 +1420,7 @@ function SubtypeDrill({ progressStore }: { progressStore: ReturnType<typeof useP
         {grade && (
           <>
             <GradeReview grade={grade} title="Subtype check" />
+            <ConfidenceRisk result={grade.result} confidence={confidence} />
             <SubtypeSummary subtype={subtype} />
           </>
         )}
@@ -1630,6 +1681,8 @@ function ReviewMistakes({
   const weakItems = progressStore.analytics.weakItems;
   const weakAnalytics = buildWeakSpotAnalytics(progressStore.progress.weakSpots);
   const topWeakSpots = weakAnalytics.spots.slice(0, 5);
+  const groups = buildWeaknessGroups(progressStore.progress, weakItems);
+  const favorites = progressStore.progress.favoriteItemIds ?? [];
 
   return (
     <Page title="Review Mistakes" eyebrow="Targeted weak-area queue" action={<SecondaryButton onClick={() => navigate('/study')}>Study Hub</SecondaryButton>}>
@@ -1637,6 +1690,39 @@ function ReviewMistakes({
         <SecondaryButton onClick={() => navigate('/review/weak-spots')}>Error Breakdown</SecondaryButton>
         <SecondaryButton onClick={() => navigate('/review/mock-replays')}>Mock Replays</SecondaryButton>
       </div>
+      <Card className="mb-4 border-amber-200 bg-amber-50">
+        <h2 className="text-xl font-bold text-slate-950">Guided weakness fixes</h2>
+        {groups.length === 0 ? (
+          <p className="mt-3 text-slate-700">No clear weakness pattern yet. Run a few checked drills or a mock oral first.</p>
+        ) : (
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {groups.map((group) => (
+              <div key={group.label} className="rounded-lg border border-amber-200 bg-white p-3">
+                <p className="font-bold text-slate-950">{group.label}</p>
+                <p className="mt-1 text-sm text-slate-600">{group.count} item(s) need review.</p>
+                <div className="mt-3">
+                  <PrimaryButton onClick={() => navigate(group.route)}>Fix this weakness</PrimaryButton>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      <Card className="mb-4 border-pink-200 bg-pink-50">
+        <h2 className="text-xl font-bold text-slate-950">Starred hard items</h2>
+        {favorites.length === 0 ? (
+          <p className="mt-3 text-slate-700">No starred items yet. Use “Star Hard Item” on confusing entities, relationships, bridges, or subtypes.</p>
+        ) : (
+          <div className="mt-4 grid gap-2">
+            {favorites.map((id) => (
+              <button key={id} onClick={() => navigate(itemRoute(id))} className="flex items-center justify-between rounded-lg border border-pink-100 bg-white p-3 text-left hover:border-pink-300">
+                <span className="font-semibold text-slate-950">{itemLabel(id)}</span>
+                <span className="text-sm text-pink-600">Study</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </Card>
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <h2 className="text-xl font-bold text-slate-950">Missed or low-mastery items</h2>
@@ -1765,6 +1851,28 @@ function SettingsScreen({ progressStore }: { progressStore: ReturnType<typeof us
                 <option value="lg">Large</option>
               </select>
             </label>
+            <label className="block rounded-lg border border-line p-3">
+              <span className="font-semibold">Exam date</span>
+              <input
+                className="mt-2 w-full rounded-lg border border-line px-3 py-2"
+                type="date"
+                value={progressStore.progress.settings.examDate ?? ''}
+                onChange={(event) => progressStore.updateSettings({ examDate: event.target.value })}
+              />
+              <span className="mt-2 block text-sm text-slate-500">Used for the dashboard countdown. You can update it for the next oral exam.</span>
+            </label>
+            <label className="block rounded-lg border border-line p-3">
+              <span className="font-semibold">Daily goal minutes</span>
+              <input
+                className="mt-2 w-full rounded-lg border border-line px-3 py-2"
+                type="number"
+                min="5"
+                max="120"
+                value={progressStore.progress.settings.dailyGoalMinutes ?? 15}
+                onChange={(event) => progressStore.updateSettings({ dailyGoalMinutes: Number(event.target.value) || 15 })}
+              />
+              <span className="mt-2 block text-sm text-slate-500">The dashboard compares this with today&apos;s study time.</span>
+            </label>
           </div>
         </Card>
         <Card>
@@ -1828,12 +1936,9 @@ function ExamQuestionPanel({
       <p className="mt-4 text-slate-700">
         Speak the answer out loud. Do not reveal answers or use hints in this phase. Use the box only for short notes if it helps you self-score later.
       </p>
-      <textarea
-        className="mt-5 min-h-52 w-full rounded-lg border border-red-200 bg-white p-3"
-        placeholder="Strict exam notes..."
-        value={notes}
-        onChange={(event) => setNotes(event.target.value)}
-      />
+      <div className="mt-5">
+        <StudyInput placeholder="Strict exam notes..." value={notes} onChange={setNotes} rows={8} />
+      </div>
     </Card>
   );
 }
@@ -1872,12 +1977,14 @@ function MockQuestionPanel({
           <p className="mt-1 text-slate-800">{followUp}</p>
         </div>
       )}
-      <textarea
-        className="mt-5 min-h-36 w-full rounded-lg border border-line p-3"
-        placeholder="Type bullet notes from what you said out loud. These notes will be checked when you finish."
-        value={notes}
-        onChange={(event) => setNotes(event.target.value)}
-      />
+      <div className="mt-5">
+        <StudyInput
+          placeholder="Type bullet notes from what you said out loud. These notes will be checked when you finish."
+          value={notes}
+          onChange={setNotes}
+          rows={6}
+        />
+      </div>
       {grade && <GradeReview grade={grade} title="Mock oral smart check" />}
       {grade && (
         <div className="mt-4">
@@ -1901,6 +2008,7 @@ function EntityAnswer({ entity, mode }: { entity: Entity; mode: DrillMode }) {
       {mode === 'attributes' && <KeyValue label="Attributes" values={entity.attributes} />}
       {mode === 'domain' && <KeyValue label="Domain" values={[getDomainName(entity.domainId)]} />}
       <EntitySummary entity={entity} compact />
+      <SayThisOutLoudCard lines={entitySpeakableLines(entity)} />
     </Card>
   );
 }
@@ -1910,6 +2018,7 @@ function RelationshipAnswer({ relationship }: { relationship: Relationship }) {
     <Card className="mt-5 border-blue-200 bg-blue-50">
       <h3 className="text-lg font-bold text-slate-950">Expected answer</h3>
       <RelationshipSummary relationship={relationship} compact />
+      <SayThisOutLoudCard lines={relationshipSpeakableLines(relationship)} />
     </Card>
   );
 }
@@ -1928,6 +2037,7 @@ function EntitySummary({ entity, progress, compact = false }: { entity: Entity; 
         <p className="text-sm font-semibold uppercase text-blue-700">Model oral answer</p>
         <p className="mt-1 text-slate-800">{modelEntityAnswer(entity)}</p>
       </div>
+      <SayThisOutLoudCard lines={entitySpeakableLines(entity)} />
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         <InfoBlock label="Primary key" values={entity.primaryKey} />
         <InfoBlock label="Foreign keys" values={entity.foreignKeys.length ? entity.foreignKeys : ['none']} />
@@ -1964,6 +2074,7 @@ function RelationshipSummary({
         <p className="text-sm font-semibold uppercase text-blue-700">Model oral answer</p>
         <p className="mt-1 text-slate-800">{modelRelationshipAnswer(relationship)}</p>
       </div>
+      <SayThisOutLoudCard lines={relationshipSpeakableLines(relationship)} />
       <div className="mt-4 grid gap-3">
         <p>
           <strong>Forward:</strong> {relationship.ruleForward}
@@ -2003,6 +2114,7 @@ function SubtypeSummary({ subtype }: { subtype: SubtypeRelationship }) {
       <h3 className="text-lg font-bold text-slate-950">Expected answer</h3>
       <p className="mt-2 text-slate-700">{subtype.description}</p>
       <InfoBlock label="Shared key" values={subtype.primaryKey} />
+      <SayThisOutLoudCard lines={subtypeSpeakableLines(subtype)} />
     </Card>
   );
 }
@@ -2045,6 +2157,112 @@ function GradeReview({ grade, title = 'Smart check' }: { grade: GradeResult; tit
             </ul>
           )}
         </div>
+      </div>
+    </Card>
+  );
+}
+
+function ConfidenceRisk({ result, confidence }: { result: MasteryResult; confidence: number }) {
+  if (confidence < 4 || result === 'correct') return null;
+  return (
+    <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
+      <p className="font-bold text-red-800">High-confidence miss</p>
+      <p className="mt-1 text-sm text-red-700">
+        You felt sure but the check found gaps. Star this item or retry it soon, because oral exams punish confident wrong answers.
+      </p>
+    </div>
+  );
+}
+
+function HintStepper({ hints }: { hints: string[] }) {
+  const [count, setCount] = useState(0);
+  if (hints.length === 0) return null;
+  return (
+    <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold uppercase text-amber-700">Tap to reveal one hint</p>
+          <p className="text-sm text-amber-800">Use hints one at a time before checking the answer.</p>
+        </div>
+        <SecondaryButton onClick={() => setCount((value) => Math.min(hints.length, value + 1))}>
+          {count >= hints.length ? 'All Hints Shown' : `Hint ${count + 1}`}
+        </SecondaryButton>
+      </div>
+      {count > 0 && (
+        <ol className="mt-3 space-y-2 text-sm text-slate-700">
+          {hints.slice(0, count).map((hint, index) => (
+            <li key={hint}>
+              <strong>Hint {index + 1}:</strong> {hint}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+function SayThisOutLoudCard({ lines, title = 'Say this out loud' }: { lines: string[]; title?: string }) {
+  const cleanLines = lines.filter(Boolean);
+  if (cleanLines.length === 0) return null;
+
+  function readAloud() {
+    if (!('speechSynthesis' in window)) {
+      globalThis.alert('Text-to-speech is not supported in this browser.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanLines.join(' '));
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  return (
+    <div className="mt-5 rounded-lg border border-green-200 bg-green-50 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-lg font-bold text-slate-950">{title}</h3>
+        <SecondaryButton onClick={readAloud}>Read it to me</SecondaryButton>
+      </div>
+      <ul className="mt-3 space-y-2 text-slate-800">
+        {cleanLines.map((line) => (
+          <li key={line} className="rounded-lg bg-white/80 p-2">
+            {line}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function FavoriteButton({
+  itemId,
+  progressStore,
+}: {
+  itemId: string;
+  progressStore: ReturnType<typeof useProgressStore>;
+}) {
+  const isFavorite = progressStore.progress.favoriteItemIds?.includes(itemId) ?? false;
+  return (
+    <SecondaryButton onClick={() => progressStore.toggleFavorite(itemId)}>
+      {isFavorite ? 'Unstar Hard Item' : 'Star Hard Item'}
+    </SecondaryButton>
+  );
+}
+
+function MilestoneCelebration({
+  milestone,
+  onDismiss,
+}: {
+  milestone: number | null;
+  onDismiss: (milestone: number) => void;
+}) {
+  if (milestone === null) return null;
+  return (
+    <Card className="mb-5 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 animate-correct-pulse">
+      <h2 className="text-2xl font-extrabold text-green-900">{milestone}% readiness milestone reached</h2>
+      <p className="mt-2 text-green-800">That is real progress. Keep stacking short practice sessions before the oral exam.</p>
+      <div className="mt-4">
+        <PrimaryButton onClick={() => onDismiss(milestone)}>Nice, keep going</PrimaryButton>
       </div>
     </Card>
   );
@@ -2287,14 +2505,45 @@ function StudyInput({
   onChange?: (value: string) => void;
   rows?: number;
 }) {
+  const [listening, setListening] = useState(false);
+
+  function startVoiceInput() {
+    if (!onChange) return;
+    const Recognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!Recognition) {
+      window.alert('Speech-to-text is not supported in this browser. You can still type your answer.');
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => setListening(true);
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results?.[0]?.[0]?.transcript ?? '';
+      onChange(`${value ? `${value} ` : ''}${transcript}`.trim());
+    };
+    recognition.start();
+  }
+
   return (
-    <textarea
-      className="min-h-32 w-full rounded-lg border border-line p-3"
-      placeholder={placeholder}
-      value={value}
-      rows={rows}
-      onChange={(event) => onChange?.(event.target.value)}
-    />
+    <div>
+      <textarea
+        className="min-h-32 w-full rounded-lg border border-line p-3"
+        placeholder={placeholder}
+        value={value}
+        rows={rows}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
+      {onChange && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <SecondaryButton onClick={startVoiceInput}>{listening ? 'Listening...' : 'Use Microphone'}</SecondaryButton>
+          <span className="text-xs text-slate-500">Speech-to-text is optional. The text box still works.</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -2571,6 +2820,74 @@ function modelRelationshipAnswer(relationship: Relationship) {
   return `${relationship.ruleForward} ${relationship.ruleReverse} This is a ${relationship.cardinality} relationship. ${fk} ${relationship.oralCue}`;
 }
 
+function entitySpeakableLines(entity: Entity) {
+  const bridge = associativeById[entity.id];
+  const description = entity.description.charAt(0).toLowerCase() + entity.description.slice(1);
+  return [
+    `${entity.name} ${description}`,
+    `Its primary key is ${entity.primaryKey.join(' and ')}.`,
+    entity.foreignKeys.length ? `Its foreign keys are ${entity.foreignKeys.join(' and ')}.` : 'It does not store foreign keys.',
+    `It belongs to the ${getDomainName(entity.domainId)} domain.`,
+    entity.isAssociative && bridge ? `It resolves ${bridge.resolves.map(getEntityName).join(' and ')}.` : '',
+    entity.isAssociative && bridge ? `Its bridge attributes include ${bridge.attributes.join(' and ')}.` : `Important attributes include ${entity.attributes.slice(0, 3).join(', ')}.`,
+  ];
+}
+
+function relationshipSpeakableLines(relationship: Relationship) {
+  return [
+    relationship.ruleForward,
+    relationship.ruleReverse,
+    `This is a ${relationship.cardinality} relationship.`,
+    relationship.requiresAssociativeEntity
+      ? `It is resolved by the ${getEntityName(relationship.associativeEntityId)} associative entity.`
+      : `The foreign key is ${relationship.fkField ?? 'not directly stored'} in ${getEntityName(relationship.fkTable)}.`,
+    relationship.oralCue,
+  ];
+}
+
+function subtypeSpeakableLines(subtype: SubtypeRelationship) {
+  return [
+    `${getEntityName(subtype.subtypeId)} is a subtype of ${getEntityName(subtype.supertypeId)}.`,
+    `The shared key is ${subtype.primaryKey.join(' and ')}.`,
+    subtype.description,
+    `Not every ${getEntityName(subtype.supertypeId)} row has to be a ${getEntityName(subtype.subtypeId)} row.`,
+  ];
+}
+
+function entityHints(entity: Entity) {
+  return [
+    `Domain: ${getDomainName(entity.domainId)}.`,
+    `Primary key: ${entity.primaryKey.join(', ')}.`,
+    entity.foreignKeys.length ? `Foreign keys: ${entity.foreignKeys.join(', ')}.` : 'Foreign keys: none.',
+  ];
+}
+
+function relationshipHints(relationship: Relationship) {
+  return [
+    `Domain: ${getDomainName(relationship.domainId)}.`,
+    `Related entities: ${getEntityName(relationship.entityA)} and ${getEntityName(relationship.entityB)}.`,
+    relationship.requiresAssociativeEntity
+      ? `Bridge: ${getEntityName(relationship.associativeEntityId)}.`
+      : `FK: ${relationship.fkField ?? 'none'} in ${getEntityName(relationship.fkTable)}.`,
+  ];
+}
+
+function bridgeHints(bridge: AssociativeEntity) {
+  return [
+    `Source entities: ${bridge.resolves.map(getEntityName).join(' and ')}.`,
+    `Composite key: ${bridge.compositePrimaryKey.join(', ')}.`,
+    `Extra attributes: ${bridge.attributes.join(', ')}.`,
+  ];
+}
+
+function subtypeHints(subtype: SubtypeRelationship) {
+  return [
+    `Subtype: ${getEntityName(subtype.subtypeId)}.`,
+    `Supertype: ${getEntityName(subtype.supertypeId)}.`,
+    `Shared key: ${subtype.primaryKey.join(', ')}.`,
+  ];
+}
+
 function entityFollowUp(entity: Entity) {
   if (entity.isAssociative) {
     return `Why is ${entity.name} modeled as an associative entity instead of putting the foreign keys directly on one source table?`;
@@ -2597,7 +2914,41 @@ function itemLabel(id: string) {
 function itemRoute(id: string) {
   if (entityById[id]) return `/study/entities/${id}`;
   if (relationshipById[id]) return `/study/relationships/${id}`;
+  if (associativeById[id]) return `/study/associative-entities/${id}`;
   return '/study';
+}
+
+function buildWeaknessGroups(progress: ProgressState, weakItems: [string, { mastery: number; attempts: number; lastResult?: string }][]) {
+  const weakSpots = Object.values(progress.weakSpots ?? {});
+  const countFor = (categories: ErrorCategory[]) => weakSpots.filter((spot) => categories.includes(spot.category) && spot.errorCount > 0).length;
+  const groups = [
+    {
+      label: 'You are missing FK placement.',
+      route: '/study/fk-logic',
+      count: countFor(['fk-logic', 'cardinality']),
+    },
+    {
+      label: 'You are missing bridge entities.',
+      route: '/study/associative-entities',
+      count: countFor(['associative']) + weakItems.filter(([id]) => associativeById[id]).length,
+    },
+    {
+      label: 'You are missing domains or entity basics.',
+      route: '/study/entities',
+      count: countFor(['entity']) + weakItems.filter(([id]) => entityById[id] && !associativeById[id]).length,
+    },
+    {
+      label: 'You are missing subtype logic.',
+      route: '/study/subtypes',
+      count: countFor(['subtype']),
+    },
+    {
+      label: 'You are missing bi-directional business rules.',
+      route: '/study/relationships',
+      count: countFor(['relationship']),
+    },
+  ];
+  return groups.filter((group) => group.count > 0);
 }
 
 function buildEntityRecallRubric(entity: Entity, mode: Exclude<DrillMode, 'purpose'>) {
@@ -2981,13 +3332,9 @@ function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof u
 
         {!submitted && (
           <>
-            <textarea
-              className="mt-4 w-full rounded-lg border border-line p-3"
-              placeholder="Type your answer..."
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              rows={3}
-            />
+            <div className="mt-4">
+              <StudyInput placeholder="Type or say your answer..." value={answer} onChange={setAnswer} rows={3} />
+            </div>
             <ConfidenceSelector value={confidence} onChange={setConfidence} />
             <div className="mt-4 flex gap-2">
               <PrimaryButton onClick={submit}>Submit</PrimaryButton>
@@ -2998,6 +3345,7 @@ function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof u
         {submitted && (
           <>
             {grade && <GradeReview grade={grade} title="Free recall check" />}
+            {grade && <ConfidenceRisk result={grade.result} confidence={confidence} />}
             <div className="mt-4 rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
               <p className="font-bold text-blue-900">Expected: {expected.join(', ')}</p>
               <p className="mt-2 font-bold text-slate-950">Your answer: {answer || '(empty)'}</p>
@@ -3121,6 +3469,23 @@ function formatStudyTime(ms: number) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function currentUnacknowledgedMilestone(progress: ProgressState) {
+  const readiness = Math.round(progress.overallReadiness * 100);
+  const acknowledged = progress.acknowledgedMilestones ?? [];
+  return [90, 75, 50].find((milestone) => readiness >= milestone && !acknowledged.includes(milestone)) ?? null;
+}
+
+function examCountdownLabel(examDate?: string) {
+  if (!examDate) return 'Set your exam date in Settings to see the countdown.';
+  const target = new Date(`${examDate}T23:59:59`);
+  if (Number.isNaN(target.getTime())) return 'Set your exam date in Settings to see the countdown.';
+  const days = Math.ceil((target.getTime() - Date.now()) / 86_400_000);
+  if (days < 0) return 'Exam date has passed. Update it in Settings for the next oral exam.';
+  if (days === 0) return 'Exam day is today. Run strict mock oral and review starred items.';
+  if (days === 1) return '1 day left. Focus on weak areas and bridge entities.';
+  return `${days} days left. Keep the daily goal moving.`;
 }
 
 function useRoute() {

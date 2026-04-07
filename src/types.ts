@@ -138,6 +138,8 @@ export interface SettingsState {
   reducedMotion: boolean;
   fontScale: 'sm' | 'md' | 'lg';
   theme: 'light' | 'dark' | 'system';
+  examDate?: string;
+  dailyGoalMinutes?: number;
 }
 
 export interface ProgressState {
@@ -153,4 +155,6 @@ export interface ProgressState {
   weakSpots: Record<string, WeakSpot>;
   totalStudyTimeMs: number;
   lastStudySessionAt?: string;
+  favoriteItemIds?: string[];
+  acknowledgedMilestones?: number[];
 }

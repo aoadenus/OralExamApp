@@ -10,6 +10,8 @@ const defaultSettings: SettingsState = {
   reducedMotion: false,
   fontScale: 'md',
   theme: 'light',
+  examDate: '2026-04-10',
+  dailyGoalMinutes: 15,
 };
 
 export function createDefaultProgress(): ProgressState {
@@ -25,6 +27,8 @@ export function createDefaultProgress(): ProgressState {
     studySessions: [],
     weakSpots: {},
     totalStudyTimeMs: 0,
+    favoriteItemIds: [],
+    acknowledgedMilestones: [],
   };
 }
 
@@ -151,6 +155,24 @@ export function useProgressStore() {
     });
   }, []);
 
+  const toggleFavorite = useCallback((itemId: string) => {
+    setProgress((current) => {
+      const favorites = current.favoriteItemIds ?? [];
+      const isFavorite = favorites.includes(itemId);
+      return {
+        ...current,
+        favoriteItemIds: isFavorite ? favorites.filter((id) => id !== itemId) : [itemId, ...favorites],
+      };
+    });
+  }, []);
+
+  const acknowledgeMilestone = useCallback((milestone: number) => {
+    setProgress((current) => ({
+      ...current,
+      acknowledgedMilestones: Array.from(new Set([...(current.acknowledgedMilestones ?? []), milestone])),
+    }));
+  }, []);
+
   const analytics = useMemo(() => buildAnalytics(progress.itemProgress), [progress.itemProgress]);
 
   return {
@@ -163,6 +185,8 @@ export function useProgressStore() {
     importProgress,
     startStudySession,
     recordWeakSpot,
+    toggleFavorite,
+    acknowledgeMilestone,
   };
 }
 
@@ -188,6 +212,8 @@ function normalizeProgress(progress: ProgressState): ProgressState {
     mockOrals: progress.mockOrals ?? [],
     studySessions: progress.studySessions ?? [],
     weakSpots: progress.weakSpots ?? {},
+    favoriteItemIds: progress.favoriteItemIds ?? [],
+    acknowledgedMilestones: progress.acknowledgedMilestones ?? [],
   };
 }
 
