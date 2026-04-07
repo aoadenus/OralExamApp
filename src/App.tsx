@@ -539,15 +539,15 @@ function PracticeHub({
   progressStore: ReturnType<typeof useProgressStore>;
 }) {
   const modules = [
-    ['⚡ Quick Drills', '2-minute lightning round — rapid self-grade drills to warm up or reinforce.', '/practice/quick-drills'],
-    ['✍️ Free Recall', 'Type your answer from memory — no multiple choice, no scaffolding.', '/practice/free-recall'],
-    ['🗺️ Visual ERD', 'Find entities and trace relationships directly on the actual ERD.', '/study/erd-visual'],
-    ['🏷️ Entity Mastery', 'Auto-graded PK, FK, and attributes, plus oral purpose practice.', '/study/entities'],
-    ['🔗 Business Rules', 'Self-grade both directions, cardinality, and FK explanation.', '/study/relationships'],
-    ['🔑 FK Logic', 'Rapid-fire placement questions with immediate right/wrong feedback.', '/study/fk-logic'],
-    ['🌉 Associative Entities', 'Bridge table identification, composite keys, and extra attributes.', '/study/associative-entities'],
-    ['🌿 Subtype Drill', 'SeasonalItem and GiftCard subtype explanation practice.', '/study/subtypes'],
-    ['🔍 Review Mistakes', 'Retry weak or recently missed items.', '/review'],
+    ['⚡ Quick Drills', 'Timed matching game. Read the prompt, click the matching PK, cardinality, FK table, or bridge table, then use Next Match.', '/practice/quick-drills'],
+    ['✍️ Free Recall', 'No multiple choice. Type or speak the requested PK, FK, or attributes from memory, then let the app check keywords.', '/practice/free-recall'],
+    ['🗺️ Visual ERD', 'Find the table or relationship on the actual ERD first. Reveal only after you point to it and can explain it.', '/study/erd-visual'],
+    ['🏷️ Entity Mastery', 'For fields, select every correct option. For purpose, say/type a short oral answer and then check it.', '/study/entities'],
+    ['🔗 Business Rules', 'Fill all five parts: cardinality, FK/bridge table, forward rule, reverse rule, and why the key belongs there.', '/study/relationships'],
+    ['🔑 FK Logic', 'Click the table that should contain the FK. If it is M:N, click the associative entity that resolves it.', '/study/fk-logic'],
+    ['🌉 Associative Entities', 'Given the source entities, click the bridge table, then review its composite key and extra attributes.', '/study/associative-entities'],
+    ['🌿 Subtype Drill', 'Choose the subtype and supertype, type the shared key, then explain what the subtype means.', '/study/subtypes'],
+    ['🔍 Review Mistakes', 'Start here when you are short on time. Pick a weakness group and use Fix this weakness.', '/review'],
   ];
 
   return (
@@ -917,11 +917,7 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
       <DrillCard
         label={`${getDomainName(entity.domainId)} - ${masteryLabel(getItemProgress(progressStore.progress, entity.id).mastery)}`}
         title={entityQuestion(entity, mode)}
-        prompt={
-          isAutoChecked
-            ? 'Select the answer, rate confidence, and submit for immediate scoring.'
-            : 'Answer out loud first. Then reveal the expected points and score your recall.'
-        }
+        prompt={entityDrillInstructions(mode)}
       >
         <div className="mb-5">
           <ErdFocusPanel entityIds={[entity.id]} title="Visual context" compact />
@@ -996,6 +992,10 @@ function AutoEntityDrill({
 
   return (
     <div>
+      <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
+        <strong className="block text-blue-950">What to do</strong>
+        {entityOptionInstructions(mode)}
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {options.map((option) => (
           <button
@@ -1150,7 +1150,7 @@ function RelationshipQuestionCard({
     <DrillCard
       label={`${getDomainName(relationship.domainId)} - ${relationship.cardinality}`}
       title={`Explain ${relationshipLabel(relationship)}.`}
-      prompt="State both sides, identify the relationship type, then justify FK placement."
+      prompt="Complete every field below. The app checks whether you included both directions of the business rule, the cardinality, the FK or bridge table, and the reason for that key placement."
     >
       <div className="mb-5">
         <ErdFocusPanel entityIds={relationshipFocusEntityIds(relationship)} title="Visual relationship context" compact />
@@ -1176,14 +1176,14 @@ function RelationshipQuestionCard({
           </select>
         </label>
         <div className="rounded-lg border border-line bg-slate-50 p-3 text-sm text-slate-600">
-          <strong className="block text-slate-950">Required</strong>
-          Forward rule, reverse rule, and FK/bridge reasoning.
+          <strong className="block text-slate-950">Required answer parts</strong>
+          Choose cardinality, choose FK or bridge table, write the forward rule, write the reverse rule, then explain why the FK or bridge belongs there.
         </div>
       </div>
       <div className="mt-4 grid gap-3">
-        <StudyInput placeholder="Forward rule: A ... can/must ..." value={forwardRule} onChange={setForwardRule} rows={3} />
-        <StudyInput placeholder="Reverse rule: Each ..." value={reverseRule} onChange={setReverseRule} rows={3} />
-        <StudyInput placeholder="Why does the FK or bridge belong there?" value={fkReason} onChange={setFkReason} rows={3} />
+        <StudyInput placeholder={`Forward rule: A ${getEntityName(relationship.entityA)} can/must ...`} value={forwardRule} onChange={setForwardRule} rows={3} />
+        <StudyInput placeholder={`Reverse rule: Each ${getEntityName(relationship.entityB)} can/must ...`} value={reverseRule} onChange={setReverseRule} rows={3} />
+        <StudyInput placeholder="Key placement reason: FK goes on the many side, or M:N uses the bridge table, because..." value={fkReason} onChange={setFkReason} rows={3} />
       </div>
       <ConfidenceSelector value={confidence} onChange={setConfidence} />
       {grade && (
@@ -1223,7 +1223,7 @@ function FkLogicTrainer({ progressStore }: { progressStore: ReturnType<typeof us
       <DrillCard
         label={relationship.cardinality}
         title={`Where does the FK or bridge belong for ${relationshipLabel(relationship)}?`}
-        prompt="Use the rule: 1:M puts the FK on the many side; M:N uses an associative entity."
+        prompt="Read the relationship, look at the ERD context, then click the table that should hold the FK. If the relationship is M:N, click the bridge table that resolves it."
       >
         <div className="mb-5">
           <ErdFocusPanel entityIds={relationshipFocusEntityIds(relationship)} title="Visual FK context" compact />
@@ -1280,7 +1280,7 @@ function AssociativeEntityDrill({ progressStore }: { progressStore: ReturnType<t
       <DrillCard
         label="M:N resolution"
         title={`Which bridge resolves ${sourceNames}?`}
-        prompt="Name the associative entity, composite key fields, and any extra bridge attributes."
+        prompt="Look at the two source entities, then click the associative entity that connects them. After you choose, review the bridge's composite key and extra attributes."
       >
         <div className="mb-5">
           <ErdFocusPanel entityIds={bridgeFocusEntityIds(bridge)} title="Visual bridge context" compact />
@@ -1382,7 +1382,7 @@ function SubtypeDrill({ progressStore }: { progressStore: ReturnType<typeof useP
       <DrillCard
         label="Subtype relationship"
         title={`Explain ${getEntityName(subtype.subtypeId)} as a subtype of ${getEntityName(subtype.supertypeId)}.`}
-        prompt="Mention the supertype, subtype, shared key, and why not every supertype row must have a subtype row."
+        prompt="Choose the subtype, choose the supertype, type the shared key, then write one sentence explaining what makes the subtype more specific than the supertype."
       >
         <div className="mb-5">
           <ErdFocusPanel entityIds={[subtype.subtypeId, subtype.supertypeId]} title="Visual subtype context" compact />
@@ -2778,6 +2778,31 @@ function entityQuestion(entity: Entity, mode: DrillMode) {
   return `Describe ${entity.name} in one clear oral-exam answer.`;
 }
 
+function entityDrillInstructions(mode: DrillMode) {
+  if (mode === 'pk') return 'Select the primary key field or fields for this entity. Then rate your confidence and press Check Answer.';
+  if (mode === 'fk') return 'Select every foreign key stored in this entity. If the correct answer is no foreign keys, choose none. Then rate confidence and check.';
+  if (mode === 'attributes') return 'Select every listed attribute that belongs to this entity. Do not select decoy attributes from other tables.';
+  return 'Say or type a short oral answer with the entity purpose, primary key, foreign keys, and two important attributes. Then press Check Answer.';
+}
+
+function entityOptionInstructions(mode: Exclude<DrillMode, 'purpose'>) {
+  if (mode === 'pk') return 'Click the key field that uniquely identifies one row in this table. Some entities can have more than one key field.';
+  if (mode === 'fk') return 'Click all fields that point to another table. If the entity has no foreign keys, click none.';
+  return 'Click only the attributes that are actually stored in this entity. Leave decoys unselected.';
+}
+
+function freeRecallInstructions(mode: Exclude<DrillMode, 'purpose'>) {
+  if (mode === 'pk') return 'From memory, type or say the primary key field name. Exact field names score best.';
+  if (mode === 'fk') return 'From memory, type or say every foreign key in this entity. If there are none, answer "none".';
+  return 'From memory, list the attributes you remember for this entity. Separate field names with commas or short phrases.';
+}
+
+function freeRecallPlaceholder(mode: Exclude<DrillMode, 'purpose'>) {
+  if (mode === 'pk') return 'Example: customer_id';
+  if (mode === 'fk') return 'Example: customer_id, order_id, or none';
+  return 'Example: first_name, last_name, email, phone';
+}
+
 function getEntityCorrectAnswers(entity: Entity, mode: Exclude<DrillMode, 'purpose'>) {
   if (mode === 'pk') return entity.primaryKey;
   if (mode === 'fk') return entity.foreignKeys.length ? entity.foreignKeys : ['none'];
@@ -3128,9 +3153,10 @@ function QuickDrills({ progressStore }: { progressStore: ReturnType<typeof usePr
           <p className="text-sm font-semibold text-slate-500">TIME REMAINING</p>
           <p className={`text-4xl font-bold ${seconds <= 20 ? 'text-red-700' : 'text-slate-950'}`}>{formatTimer(seconds)}</p>
         </div>
-        <p className="mt-3 text-sm text-slate-600">
-          Pick the matching answer. This drills PKs, relationship cardinality, FK/bridge tables, and associative entities.
-        </p>
+        <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
+          <strong className="block text-blue-950">How to play</strong>
+          Read the pink category and the question. Click one answer choice. If it is wrong, read the expected answer, then press Next Match to keep going before the timer ends.
+        </div>
         <p className="mt-2 text-sm text-slate-600">{attempts} attempted - {correct} correct</p>
       </div>
 
@@ -3153,7 +3179,7 @@ function QuickDrills({ progressStore }: { progressStore: ReturnType<typeof usePr
           )}
           <div className="mt-5 flex gap-2">
             <PrimaryButton onClick={() => location.reload()}>Try Again</PrimaryButton>
-            <SecondaryButton onClick={() => location.pathname = '/practice'}>Back to Practice</SecondaryButton>
+            <SecondaryButton onClick={() => { window.location.hash = '/practice'; }}>Back to Practice</SecondaryButton>
           </div>
         </Card>
       ) : (
@@ -3162,6 +3188,7 @@ function QuickDrills({ progressStore }: { progressStore: ReturnType<typeof usePr
           <Card>
             <p className="text-sm font-semibold uppercase text-pink-600">{prompt.category}</p>
             <h2 className="mt-2 text-2xl font-bold text-slate-950">{prompt.prompt}</h2>
+            <p className="mt-3 text-sm text-slate-600">Choose exactly one answer. The app grades this immediately.</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {prompt.choices.map((choice) => (
                 <button
@@ -3245,7 +3272,7 @@ function LegacyQuickDrills({ progressStore }: { progressStore: ReturnType<typeof
           <p className="mt-2 text-slate-600">Accuracy: {attempts === 0 ? '—' : percent(correct / attempts)}</p>
           <div className="mt-5 flex gap-2">
             <PrimaryButton onClick={() => location.reload()}>Try Again</PrimaryButton>
-            <SecondaryButton onClick={() => location.pathname = '/practice'}>Back to Practice</SecondaryButton>
+            <SecondaryButton onClick={() => { window.location.hash = '/practice'; }}>Back to Practice</SecondaryButton>
           </div>
         </Card>
       ) : (
@@ -3306,7 +3333,7 @@ function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof u
   }
 
   return (
-    <Page title="Free Recall" eyebrow="Type your answer">
+    <Page title="Free Recall" eyebrow="Exact fields from memory">
       <Card>
         <div className="mb-5">
           <ErdFocusPanel entityIds={[entity.id]} title="Visual recall context" compact />
@@ -3318,11 +3345,15 @@ function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof u
         </p>
         <p className="mt-2 text-2xl font-bold text-slate-950">{entity.name}</p>
         <p className="mt-1 text-slate-600">{entity.description}</p>
+        <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
+          <strong className="block text-blue-950">What to do</strong>
+          {freeRecallInstructions(mode)}
+        </div>
 
         {!submitted && (
           <>
             <div className="mt-4">
-              <StudyInput placeholder="Type or say your answer..." value={answer} onChange={setAnswer} rows={3} />
+              <StudyInput placeholder={freeRecallPlaceholder(mode)} value={answer} onChange={setAnswer} rows={3} />
             </div>
             <ConfidenceSelector value={confidence} onChange={setConfidence} />
             <div className="mt-4 flex gap-2">
