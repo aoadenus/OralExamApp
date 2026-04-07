@@ -42,7 +42,7 @@ import type {
 } from './types';
 
 type Navigate = (path: string) => void;
-type DrillMode = 'purpose' | 'pk' | 'fk' | 'attributes' | 'domain';
+type DrillMode = 'purpose' | 'pk' | 'fk' | 'attributes';
 type MatchingChoice = { id: string; label: string };
 type MatchingPrompt = {
   category: string;
@@ -70,7 +70,7 @@ const navItems = [
   { label: 'Settings', path: '/settings' },
 ];
 
-const entityModes: DrillMode[] = ['purpose', 'pk', 'fk', 'attributes', 'domain'];
+const entityModes: DrillMode[] = ['purpose', 'pk', 'fk', 'attributes'];
 const likelyOralRelationshipIds = ['rule-01', 'rule-05', 'rule-22', 'rule-21', 'rule-34', 'rule-13', 'rule-18', 'rule-40', 'rule-43'];
 const likelyOralBridgeIds = ['customerallergyinfo'];
 const fkPlacementRules = [
@@ -344,7 +344,7 @@ function StudyHub({
   progressStore: ReturnType<typeof useProgressStore>;
 }) {
   const modules = [
-    ['🃏 1. Flashcards', 'Review flashcards, domains, model oral answers, and key fields before testing yourself.', '/study/flashcards'],
+    ['🃏 1. Flashcards', 'Review model oral answers and key fields before testing yourself.', '/study/flashcards'],
     ['📋 Cheat Sheet', 'Review the six domains, bridge entities, subtypes, FK rules, and likely oral targets in one place.', '/study/cheat-sheet'],
     ['🗺️ Visual ERD', 'Practice finding entities and tracing relationships on the real Group 8 ERD diagram.', '/study/erd-visual'],
     ['🏋️ 2. Practice', 'Use auto-graded entity recall, business rules, FK logic, bridges, and subtypes.', '/practice'],
@@ -542,7 +542,7 @@ function PracticeHub({
     ['⚡ Quick Drills', '2-minute lightning round — rapid self-grade drills to warm up or reinforce.', '/practice/quick-drills'],
     ['✍️ Free Recall', 'Type your answer from memory — no multiple choice, no scaffolding.', '/practice/free-recall'],
     ['🗺️ Visual ERD', 'Find entities and trace relationships directly on the actual ERD.', '/study/erd-visual'],
-    ['🏷️ Entity Mastery', 'Auto-graded PK, FK, attributes, domain recall, plus oral purpose practice.', '/study/entities'],
+    ['🏷️ Entity Mastery', 'Auto-graded PK, FK, and attributes, plus oral purpose practice.', '/study/entities'],
     ['🔗 Business Rules', 'Self-grade both directions, cardinality, and FK explanation.', '/study/relationships'],
     ['🔑 FK Logic', 'Rapid-fire placement questions with immediate right/wrong feedback.', '/study/fk-logic'],
     ['🌉 Associative Entities', 'Bridge table identification, composite keys, and extra attributes.', '/study/associative-entities'],
@@ -621,7 +621,7 @@ function StudyFlashcards({ progressStore }: { progressStore: ReturnType<typeof u
             <div className="mb-3 text-4xl emoji-float">🤔</div>
             <p className="text-lg font-semibold text-slate-950">
               {isEntityCard
-                ? `Explain ${(current as Entity).name}: purpose, PK, FKs, attributes, and domain.`
+                ? `Explain ${(current as Entity).name}: purpose, PK, FKs, and important attributes.`
                 : `Explain ${relationshipLabel(current as Relationship)}: both rules, cardinality, and FK logic.`}
             </p>
             <p className="mt-3 text-slate-500">🎙️ Say the answer out loud before revealing it!</p>
@@ -670,7 +670,7 @@ function VisualErdPractice({ progressStore }: { progressStore: ReturnType<typeof
         ]).filter(Boolean);
   const prompt =
     mode === 'entity'
-      ? `Find ${entityTarget.name} on the actual ERD. Then explain its PK, FKs, and domain.`
+      ? `Find ${entityTarget.name} on the actual ERD. Then explain its purpose, PK, FKs, and important attributes.`
       : `Find ${relationshipLabel(relationshipTarget)} on the actual ERD. Then trace the relationship and explain FK logic.`;
 
   function next(result?: MasteryResult) {
@@ -940,7 +940,7 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
         ) : (
           <>
             <StudyInput
-              placeholder="Type your oral answer: purpose, PK, FKs, attributes, and domain..."
+              placeholder="Type your oral answer: purpose, PK, FKs, and important attributes..."
               value={purposeAnswer}
               onChange={setPurposeAnswer}
             />
@@ -985,10 +985,6 @@ function AutoEntityDrill({
 
   function toggle(value: string) {
     if (result) return;
-    if (mode === 'domain') {
-      setSelected([value]);
-      return;
-    }
     setSelected((current) => (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]));
   }
 
@@ -1009,7 +1005,7 @@ function AutoEntityDrill({
               selected.includes(option) ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-line bg-white hover:border-blue-300'
             }`}
           >
-            {mode === 'domain' ? getDomainName(option) : option}
+            {option}
           </button>
         ))}
       </div>
@@ -1020,7 +1016,7 @@ function AutoEntityDrill({
           <ConfidenceRisk result={result} confidence={confidence} />
           <p className="font-semibold">{result === 'correct' ? 'Correct' : result === 'partial' ? 'Partially correct' : 'Incorrect'}</p>
           <p className="mt-2 text-slate-700">
-            Expected: {correct.map((value) => (mode === 'domain' ? getDomainName(value) : value)).join(', ')}
+            Expected: {correct.join(', ')}
           </p>
           <EntityAnswer entity={entity} mode={mode} />
         </Card>
@@ -2006,7 +2002,6 @@ function EntityAnswer({ entity, mode }: { entity: Entity; mode: DrillMode }) {
       {mode === 'pk' && <KeyValue label="Primary key" values={entity.primaryKey} />}
       {mode === 'fk' && <KeyValue label="Foreign keys" values={entity.foreignKeys.length ? entity.foreignKeys : ['none']} />}
       {mode === 'attributes' && <KeyValue label="Attributes" values={entity.attributes} />}
-      {mode === 'domain' && <KeyValue label="Domain" values={[getDomainName(entity.domainId)]} />}
       <EntitySummary entity={entity} compact />
       <SayThisOutLoudCard lines={entitySpeakableLines(entity)} />
     </Card>
@@ -2766,20 +2761,17 @@ function entityQuestion(entity: Entity, mode: DrillMode) {
   if (mode === 'pk') return `What is the primary key of ${entity.name}?`;
   if (mode === 'fk') return `Which foreign keys are in ${entity.name}?`;
   if (mode === 'attributes') return `Which attributes belong to ${entity.name}?`;
-  if (mode === 'domain') return `Which domain contains ${entity.name}?`;
   return `Describe ${entity.name} in one clear oral-exam answer.`;
 }
 
 function getEntityCorrectAnswers(entity: Entity, mode: Exclude<DrillMode, 'purpose'>) {
   if (mode === 'pk') return entity.primaryKey;
   if (mode === 'fk') return entity.foreignKeys.length ? entity.foreignKeys : ['none'];
-  if (mode === 'attributes') return entity.attributes;
-  return [entity.domainId];
+  return entity.attributes;
 }
 
 function getEntityOptions(entity: Entity, mode: Exclude<DrillMode, 'purpose'>) {
   const correct = getEntityCorrectAnswers(entity, mode);
-  if (mode === 'domain') return shuffle(unique([...correct, ...domains.map((domain) => domain.id)]));
   if (mode === 'pk') {
     const decoys = entities.flatMap((item) => item.primaryKey).filter((key) => !correct.includes(key));
     return shuffle(unique([...correct, ...decoys]).slice(0, Math.max(5, correct.length + 4)));
@@ -2827,7 +2819,6 @@ function entitySpeakableLines(entity: Entity) {
     `${entity.name} ${description}`,
     `Its primary key is ${entity.primaryKey.join(' and ')}.`,
     entity.foreignKeys.length ? `Its foreign keys are ${entity.foreignKeys.join(' and ')}.` : 'It does not store foreign keys.',
-    `It belongs to the ${getDomainName(entity.domainId)} domain.`,
     entity.isAssociative && bridge ? `It resolves ${bridge.resolves.map(getEntityName).join(' and ')}.` : '',
     entity.isAssociative && bridge ? `Its bridge attributes include ${bridge.attributes.join(' and ')}.` : `Important attributes include ${entity.attributes.slice(0, 3).join(', ')}.`,
   ];
@@ -2856,7 +2847,7 @@ function subtypeSpeakableLines(subtype: SubtypeRelationship) {
 
 function entityHints(entity: Entity) {
   return [
-    `Domain: ${getDomainName(entity.domainId)}.`,
+    `Purpose clue: ${entity.description}.`,
     `Primary key: ${entity.primaryKey.join(', ')}.`,
     entity.foreignKeys.length ? `Foreign keys: ${entity.foreignKeys.join(', ')}.` : 'Foreign keys: none.',
   ];
@@ -2864,8 +2855,8 @@ function entityHints(entity: Entity) {
 
 function relationshipHints(relationship: Relationship) {
   return [
-    `Domain: ${getDomainName(relationship.domainId)}.`,
     `Related entities: ${getEntityName(relationship.entityA)} and ${getEntityName(relationship.entityB)}.`,
+    `Cardinality: ${relationship.cardinality}.`,
     relationship.requiresAssociativeEntity
       ? `Bridge: ${getEntityName(relationship.associativeEntityId)}.`
       : `FK: ${relationship.fkField ?? 'none'} in ${getEntityName(relationship.fkTable)}.`,
@@ -2933,7 +2924,7 @@ function buildWeaknessGroups(progress: ProgressState, weakItems: [string, { mast
       count: countFor(['associative']) + weakItems.filter(([id]) => associativeById[id]).length,
     },
     {
-      label: 'You are missing domains or entity basics.',
+      label: 'You are missing entity basics.',
       route: '/study/entities',
       count: countFor(['entity']) + weakItems.filter(([id]) => entityById[id] && !associativeById[id]).length,
     },
@@ -2958,8 +2949,8 @@ function buildEntityRecallRubric(entity: Entity, mode: Exclude<DrillMode, 'purpo
     label: `${entity.name} ${mode} recall`,
     criteria: expected.map((value) => ({
       id: value,
-      label: mode === 'domain' ? getDomainName(value) : value,
-      terms: mode === 'domain' ? [getDomainName(value), value] : [value, value.replace(/_/g, ' ')],
+      label: value,
+      terms: [value, value.replace(/_/g, ' ')],
     })),
   };
 }
@@ -2998,28 +2989,13 @@ function mockOralRecommendation(entityGrade: GradeResult | null, relationshipGra
     return 'Go to Business Rule Builder next. The relationship answer needs stronger forward/reverse rule recall.';
   }
   if (entityGrade && entityGrade.result !== 'correct') {
-    return 'Go to Entity Mastery or Free Recall next. The entity answer missed key fields, attributes, or domain placement.';
+    return 'Go to Entity Mastery or Free Recall next. The entity answer missed key fields, attributes, or purpose.';
   }
   return 'Strong mock oral. Run another strict exam mode session or switch to weak-area Visual ERD practice.';
 }
 
 function buildMatchingPrompt(progress: ProgressState): MatchingPrompt {
-  const category = randomFrom(['Entity to domain', 'Entity to primary key', 'Relationship to cardinality', 'Relationship to FK or bridge', 'M:N pair to bridge'] as const);
-  if (category === 'Entity to domain') {
-    const entity = pickEntity(progress.itemProgress);
-    return {
-      category,
-      prompt: `Which domain contains ${entity.name}?`,
-      answerId: entity.domainId,
-      answerLabel: getDomainName(entity.domainId),
-      choices: domains.map((domain) => ({ id: domain.id, label: domain.name })),
-      itemId: entity.id,
-      itemName: entity.name,
-      weakCategory: 'entity',
-      entityIds: [entity.id],
-      explanation: `${entity.name} belongs to ${getDomainName(entity.domainId)}.`,
-    };
-  }
+  const category = randomFrom(['Entity to primary key', 'Relationship to cardinality', 'Relationship to FK or bridge', 'M:N pair to bridge'] as const);
   if (category === 'Entity to primary key') {
     const entity = pickEntity(progress.itemProgress);
     const answer = entity.primaryKey.join(', ');
@@ -3139,7 +3115,7 @@ function QuickDrills({ progressStore }: { progressStore: ReturnType<typeof usePr
           <p className={`text-4xl font-bold ${seconds <= 20 ? 'text-red-700' : 'text-slate-950'}`}>{formatTimer(seconds)}</p>
         </div>
         <p className="mt-3 text-sm text-slate-600">
-          Pick the matching answer. This drills domains, PKs, relationship cardinality, FK/bridge tables, and associative entities.
+          Pick the matching answer. This drills PKs, relationship cardinality, FK/bridge tables, and associative entities.
         </p>
         <p className="mt-2 text-sm text-slate-600">{attempts} attempted - {correct} correct</p>
       </div>
@@ -3290,13 +3266,13 @@ function LegacyQuickDrills({ progressStore }: { progressStore: ReturnType<typeof
 
 function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof useProgressStore> }) {
   const [entity, setEntity] = useState(() => pickEntity(progressStore.progress.itemProgress));
-  const [mode, setMode] = useState<Exclude<DrillMode, 'purpose'>>(() => randomFrom(['pk', 'fk', 'attributes', 'domain'] as const));
+  const [mode, setMode] = useState<Exclude<DrillMode, 'purpose'>>(() => randomFrom(['pk', 'fk', 'attributes'] as const));
   const [answer, setAnswer] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [grade, setGrade] = useState<GradeResult | null>(null);
   const [confidence, setConfidence] = useState(3);
 
-  const expected = getEntityCorrectAnswers(entity, mode).map((value) => (mode === 'domain' ? getDomainName(value) : value));
+  const expected = getEntityCorrectAnswers(entity, mode);
 
   function submit() {
     setSubmitted(true);
@@ -3308,7 +3284,7 @@ function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof u
 
   function next() {
     setEntity(pickEntity(progressStore.progress.itemProgress));
-    setMode(randomFrom(['pk', 'fk', 'attributes', 'domain'] as const));
+    setMode(randomFrom(['pk', 'fk', 'attributes'] as const));
     setAnswer('');
     setSubmitted(false);
     setGrade(null);
@@ -3325,7 +3301,6 @@ function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof u
           {mode === 'pk' && 'Primary Key'}
           {mode === 'fk' && 'Foreign Keys'}
           {mode === 'attributes' && 'Attributes'}
-          {mode === 'domain' && 'Domain'}
         </p>
         <p className="mt-2 text-2xl font-bold text-slate-950">{entity.name}</p>
         <p className="mt-1 text-slate-600">{entity.description}</p>

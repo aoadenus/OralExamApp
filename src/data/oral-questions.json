@@ -4,7 +4,7 @@
     "type": "entity",
     "prompt": "Describe the Customer entity, its purpose, and its key attributes.",
     "entityId": "customer",
-    "expectedChecklist": ["explains customer purpose", "mentions customer_id", "mentions name and contact attributes", "places it in Customer & Sales"],
+    "expectedChecklist": ["explains customer purpose", "mentions customer_id", "mentions name and contact attributes"],
     "domainId": "customer-sales",
     "difficulty": "easy"
   },

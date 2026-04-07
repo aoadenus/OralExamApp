@@ -15,9 +15,9 @@ Open the local URL printed by Vite, usually `http://localhost:5173`.
 
 Use the app in this order:
 
-1. `Study` → review flashcards and domain pages.
+1. `Study` → review flashcards, visual ERD practice, and reference pages.
    - `Visual ERD` uses the actual Group 8 ERD image with revealable table highlights.
-2. `Practice` → run checked drills for entity PKs, FKs, attributes, domain recall, relationship rules, FK placement, bridge entities, and subtypes.
+2. `Practice` → run checked drills for entity PKs, FKs, attributes, relationship rules, FK placement, bridge entities, and subtypes.
 3. `Mock Oral` → run the five-minute simulation with one entity question and one relationship question.
 4. `Review` → retry missed or low-mastery items.
 

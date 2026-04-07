@@ -1,4 +1,4 @@
-import { getDomainName, getEntityName } from './content';
+import { getEntityName } from './content';
 import type { Entity, MasteryResult, OralQuestion, Relationship, SubtypeRelationship } from '../types';
 
 export interface GradeCriterion {
@@ -115,12 +115,6 @@ export function buildEntityRubric(entity: Entity): TextAnswerRubric {
         label: 'Mentions at least two relevant attributes',
         terms: entity.attributes,
         minMatches: Math.min(2, Math.max(entity.attributes.length, 1)),
-      },
-      {
-        id: 'domain',
-        label: `Places it in ${getDomainName(entity.domainId)}`,
-        terms: [getDomainName(entity.domainId), entity.domainId],
-        minMatches: 1,
       },
     ],
   };
