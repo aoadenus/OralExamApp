@@ -20,10 +20,20 @@ import {
 } from './lib/content';
 import { buildWeakSpotAnalytics, calculateTodayStudyTime, getItemProgress, masteryLabel, useProgressStore } from './lib/progress';
 import { pickAssociativeEntity, pickEntity, pickRelationship } from './lib/questions';
+import {
+  buildEntityRubric,
+  buildOralQuestionRubric,
+  buildRelationshipRubric,
+  buildSubtypeRubric,
+  gradeTextAnswer,
+  gradeToFivePointScore,
+  type GradeResult,
+} from './lib/grading';
 import type {
   AssociativeEntity,
   Entity,
   ErdHotspot,
+  ErrorCategory,
   MasteryResult,
   OralQuestion,
   ProgressState,
@@ -33,6 +43,19 @@ import type {
 
 type Navigate = (path: string) => void;
 type DrillMode = 'purpose' | 'pk' | 'fk' | 'attributes' | 'domain';
+type MatchingChoice = { id: string; label: string };
+type MatchingPrompt = {
+  category: string;
+  prompt: string;
+  answerId: string;
+  answerLabel: string;
+  choices: MatchingChoice[];
+  itemId: string;
+  itemName: string;
+  weakCategory: ErrorCategory;
+  entityIds: string[];
+  explanation: string;
+};
 
 const navItems = [
   { label: 'Dashboard', path: '/' },
@@ -854,6 +877,8 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
   const [entity, setEntity] = useState(() => pickEntity(progressStore.progress.itemProgress));
   const [mode, setMode] = useState<DrillMode>(() => randomFrom(entityModes));
   const [revealed, setRevealed] = useState(false);
+  const [purposeAnswer, setPurposeAnswer] = useState('');
+  const [purposeGrade, setPurposeGrade] = useState<GradeResult | null>(null);
   const [confidence, setConfidence] = useState(3);
   const isAutoChecked = mode !== 'purpose';
 
@@ -861,7 +886,17 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
     setEntity(pickEntity(progressStore.progress.itemProgress));
     setMode(randomFrom(entityModes));
     setRevealed(false);
+    setPurposeAnswer('');
+    setPurposeGrade(null);
     setConfidence(3);
+  }
+
+  function checkPurposeAnswer() {
+    const grade = gradeTextAnswer(purposeAnswer, buildEntityRubric(entity));
+    setPurposeGrade(grade);
+    setRevealed(true);
+    progressStore.recordAttempt(entity.id, grade.result, confidence);
+    progressStore.recordWeakSpot(entity.id, entity.name, 'entity', grade.result);
   }
 
   return (
@@ -875,6 +910,9 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
             : 'Answer out loud first. Then reveal the expected points and score your recall.'
         }
       >
+        <div className="mb-5">
+          <ErdFocusPanel entityIds={[entity.id]} title="Visual context" compact />
+        </div>
         {isAutoChecked ? (
           <AutoEntityDrill
             key={`${entity.id}-${mode}`}
@@ -887,19 +925,22 @@ function EntityMastery({ progressStore }: { progressStore: ReturnType<typeof use
           />
         ) : (
           <>
-            <StudyInput placeholder="Optional notes: purpose, PK, FKs, attributes, domain..." />
-            {revealed && <EntityAnswer entity={entity} mode={mode} />}
-            <DrillFooter
-              revealed={revealed}
-              confidence={confidence}
-              setConfidence={setConfidence}
-              onReveal={() => setRevealed(true)}
-              onScore={(result) => {
-                progressStore.recordAttempt(entity.id, result, confidence);
-                next();
-              }}
-              onSkip={next}
+            <StudyInput
+              placeholder="Type your oral answer: purpose, PK, FKs, attributes, and domain..."
+              value={purposeAnswer}
+              onChange={setPurposeAnswer}
             />
+            <ConfidenceSelector value={confidence} onChange={setConfidence} />
+            {purposeGrade && (
+              <>
+                <GradeReview grade={purposeGrade} title="Entity answer check" />
+                <EntityAnswer entity={entity} mode={mode} />
+              </>
+            )}
+            <div className="mt-5 flex flex-wrap gap-2">
+              {!purposeGrade ? <PrimaryButton onClick={checkPurposeAnswer}>Check Answer</PrimaryButton> : <PrimaryButton onClick={next}>Next Entity</PrimaryButton>}
+              <SecondaryButton onClick={next}>Skip</SecondaryButton>
+            </div>
           </>
         )}
       </DrillCard>
@@ -1001,28 +1042,18 @@ function EntityDetail({
 
 function RelationshipBuilder({ progressStore }: { progressStore: ReturnType<typeof useProgressStore> }) {
   const [relationship, setRelationship] = useState(() => pickRelationship(progressStore.progress.itemProgress));
-  const [revealed, setRevealed] = useState(false);
-  const [confidence, setConfidence] = useState(3);
 
   function next() {
     setRelationship(pickRelationship(progressStore.progress.itemProgress));
-    setRevealed(false);
-    setConfidence(3);
   }
 
   return (
     <Page title="Business Rule Builder" eyebrow="46 bi-directional rules">
       <RelationshipQuestionCard
+        key={relationship.id}
         relationship={relationship}
-        revealed={revealed}
-        confidence={confidence}
-        setConfidence={setConfidence}
-        onReveal={() => setRevealed(true)}
-        onScore={(result) => {
-          progressStore.recordAttempt(relationship.id, result, confidence);
-          next();
-        }}
-        onSkip={next}
+        progressStore={progressStore}
+        onNext={next}
       />
     </Page>
   );
@@ -1048,58 +1079,92 @@ function RelationshipDetail({
 
 function RelationshipQuestionCard({
   relationship,
-  revealed,
-  confidence,
-  setConfidence,
-  onReveal,
-  onScore,
-  onSkip,
+  progressStore,
+  onNext,
 }: {
   relationship: Relationship;
-  revealed: boolean;
-  confidence: number;
-  setConfidence: (value: number) => void;
-  onReveal: () => void;
-  onScore: (result: MasteryResult) => void;
-  onSkip: () => void;
+  progressStore: ReturnType<typeof useProgressStore>;
+  onNext: () => void;
 }) {
+  const expectedTarget = relationship.requiresAssociativeEntity
+    ? relationship.associativeEntityId ?? relationship.fkTable ?? ''
+    : relationship.fkTable ?? '';
+  const targetChoices = unique([relationship.entityA, relationship.entityB, relationship.fkTable ?? '', relationship.associativeEntityId ?? '']).filter(Boolean);
+  const [cardinality, setCardinality] = useState('');
+  const [targetTable, setTargetTable] = useState('');
+  const [forwardRule, setForwardRule] = useState('');
+  const [reverseRule, setReverseRule] = useState('');
+  const [fkReason, setFkReason] = useState('');
+  const [confidence, setConfidence] = useState(3);
+  const [grade, setGrade] = useState<GradeResult | null>(null);
+
+  function checkAnswer() {
+    const combinedAnswer = [
+      cardinality,
+      targetTable,
+      getEntityName(targetTable),
+      forwardRule,
+      reverseRule,
+      fkReason,
+      relationship.requiresAssociativeEntity ? 'bridge associative entity' : 'foreign key',
+    ].join(' ');
+    const checked = gradeTextAnswer(combinedAnswer, buildRelationshipRubric(relationship));
+    setGrade(checked);
+    progressStore.recordAttempt(relationship.id, checked.result, confidence);
+    progressStore.recordWeakSpot(relationship.id, relationshipLabel(relationship), 'relationship', checked.result);
+    if (cardinality !== relationship.cardinality) progressStore.recordWeakSpot(relationship.id, relationshipLabel(relationship), 'cardinality', 'incorrect');
+    if (targetTable !== expectedTarget) progressStore.recordWeakSpot(relationship.id, relationshipLabel(relationship), 'fk-logic', 'incorrect');
+  }
+
   return (
     <DrillCard
       label={`${getDomainName(relationship.domainId)} - ${relationship.cardinality}`}
       title={`Explain ${relationshipLabel(relationship)}.`}
       prompt="State both sides, identify the relationship type, then justify FK placement."
     >
-      <div className="grid gap-3 md:grid-cols-3">
-        <SelectBox label="Cardinality">
-          <option>Choose</option>
-          <option>1:1</option>
-          <option>1:M</option>
-          <option>M:N</option>
-        </SelectBox>
-        <SelectBox label="FK / bridge table">
-          <option>Choose</option>
-          {[relationship.entityA, relationship.entityB, relationship.fkTable, relationship.associativeEntityId]
-            .filter(Boolean)
-            .map((id) => (
-              <option key={id ?? ''}>{getEntityName(id)}</option>
-            ))}
-        </SelectBox>
-        <SelectBox label="Rule direction">
-          <option>Forward and reverse</option>
-          <option>Forward only</option>
-          <option>Reverse only</option>
-        </SelectBox>
+      <div className="mb-5">
+        <ErdFocusPanel entityIds={relationshipFocusEntityIds(relationship)} title="Visual relationship context" compact />
       </div>
-      <StudyInput placeholder="Type the two business-rule sentences and FK reasoning..." />
-      {revealed && <RelationshipAnswer relationship={relationship} />}
-      <DrillFooter
-        revealed={revealed}
-        confidence={confidence}
-        setConfidence={setConfidence}
-        onReveal={onReveal}
-        onScore={onScore}
-        onSkip={onSkip}
-      />
+      <div className="grid gap-3 md:grid-cols-3">
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Cardinality</span>
+          <select className="mt-2 w-full rounded-lg border border-line px-3 py-2" value={cardinality} onChange={(event) => setCardinality(event.target.value)}>
+            <option value="">Choose</option>
+            <option value="1:1">1:1</option>
+            <option value="1:M">1:M</option>
+            <option value="M:N">M:N</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">FK / bridge table</span>
+          <select className="mt-2 w-full rounded-lg border border-line px-3 py-2" value={targetTable} onChange={(event) => setTargetTable(event.target.value)}>
+            <option value="">Choose</option>
+            {targetChoices.map((id) => (
+              <option key={id} value={id}>{getEntityName(id)}</option>
+            ))}
+          </select>
+        </label>
+        <div className="rounded-lg border border-line bg-slate-50 p-3 text-sm text-slate-600">
+          <strong className="block text-slate-950">Required</strong>
+          Forward rule, reverse rule, and FK/bridge reasoning.
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3">
+        <StudyInput placeholder="Forward rule: A ... can/must ..." value={forwardRule} onChange={setForwardRule} rows={3} />
+        <StudyInput placeholder="Reverse rule: Each ..." value={reverseRule} onChange={setReverseRule} rows={3} />
+        <StudyInput placeholder="Why does the FK or bridge belong there?" value={fkReason} onChange={setFkReason} rows={3} />
+      </div>
+      <ConfidenceSelector value={confidence} onChange={setConfidence} />
+      {grade && (
+        <>
+          <GradeReview grade={grade} title="Business rule check" />
+          <RelationshipAnswer relationship={relationship} />
+        </>
+      )}
+      <div className="mt-5 flex flex-wrap gap-2">
+        {!grade ? <PrimaryButton onClick={checkAnswer}>Check Rule</PrimaryButton> : <PrimaryButton onClick={onNext}>Next Rule</PrimaryButton>}
+        <SecondaryButton onClick={onNext}>Skip</SecondaryButton>
+      </div>
     </DrillCard>
   );
 }
@@ -1128,6 +1193,9 @@ function FkLogicTrainer({ progressStore }: { progressStore: ReturnType<typeof us
         title={`Where does the FK or bridge belong for ${relationshipLabel(relationship)}?`}
         prompt="Use the rule: 1:M puts the FK on the many side; M:N uses an associative entity."
       >
+        <div className="mb-5">
+          <ErdFocusPanel entityIds={relationshipFocusEntityIds(relationship)} title="Visual FK context" compact />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {choices.map((choice) => (
             <button
@@ -1180,6 +1248,9 @@ function AssociativeEntityDrill({ progressStore }: { progressStore: ReturnType<t
         title={`Which bridge resolves ${sourceNames}?`}
         prompt="Name the associative entity, composite key fields, and any extra bridge attributes."
       >
+        <div className="mb-5">
+          <ErdFocusPanel entityIds={bridgeFocusEntityIds(bridge)} title="Visual bridge context" compact />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {associativeEntities.map((candidate) => (
             <button
@@ -1233,14 +1304,32 @@ function AssociativeDetail({
 
 function SubtypeDrill({ progressStore }: { progressStore: ReturnType<typeof useProgressStore> }) {
   const [subtype, setSubtype] = useState(() => randomFrom(subtypes));
-  const [revealed, setRevealed] = useState(false);
+  const [selectedSubtype, setSelectedSubtype] = useState('');
+  const [selectedSupertype, setSelectedSupertype] = useState('');
+  const [sharedKey, setSharedKey] = useState('');
+  const [explanation, setExplanation] = useState('');
+  const [grade, setGrade] = useState<GradeResult | null>(null);
   const [confidence, setConfidence] = useState(3);
 
   function next(result?: MasteryResult) {
     if (result) progressStore.recordAttempt(subtype.subtypeId, result, confidence);
     setSubtype(randomFrom(subtypes));
-    setRevealed(false);
+    setSelectedSubtype('');
+    setSelectedSupertype('');
+    setSharedKey('');
+    setExplanation('');
+    setGrade(null);
     setConfidence(3);
+  }
+
+  function checkSubtypeAnswer() {
+    const checked = gradeTextAnswer(
+      [selectedSubtype, getEntityName(selectedSubtype), selectedSupertype, getEntityName(selectedSupertype), sharedKey, explanation].join(' '),
+      buildSubtypeRubric(subtype),
+    );
+    setGrade(checked);
+    progressStore.recordAttempt(subtype.subtypeId, checked.result, confidence);
+    progressStore.recordWeakSpot(subtype.subtypeId, getEntityName(subtype.subtypeId), 'subtype', checked.result);
   }
 
   return (
@@ -1250,16 +1339,44 @@ function SubtypeDrill({ progressStore }: { progressStore: ReturnType<typeof useP
         title={`Explain ${getEntityName(subtype.subtypeId)} as a subtype of ${getEntityName(subtype.supertypeId)}.`}
         prompt="Mention the supertype, subtype, shared key, and why not every supertype row must have a subtype row."
       >
-        <StudyInput placeholder="Answer out loud, then capture the key points here..." />
-        {revealed && <SubtypeSummary subtype={subtype} />}
-        <DrillFooter
-          revealed={revealed}
-          confidence={confidence}
-          setConfidence={setConfidence}
-          onReveal={() => setRevealed(true)}
-          onScore={(result) => next(result)}
-          onSkip={() => next()}
-        />
+        <div className="mb-5">
+          <ErdFocusPanel entityIds={[subtype.subtypeId, subtype.supertypeId]} title="Visual subtype context" compact />
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Subtype</span>
+            <select className="mt-2 w-full rounded-lg border border-line px-3 py-2" value={selectedSubtype} onChange={(event) => setSelectedSubtype(event.target.value)}>
+              <option value="">Choose</option>
+              {subtypes.map((candidate) => (
+                <option key={candidate.subtypeId} value={candidate.subtypeId}>{getEntityName(candidate.subtypeId)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-700">Supertype</span>
+            <select className="mt-2 w-full rounded-lg border border-line px-3 py-2" value={selectedSupertype} onChange={(event) => setSelectedSupertype(event.target.value)}>
+              <option value="">Choose</option>
+              {unique(subtypes.map((candidate) => candidate.supertypeId)).map((id) => (
+                <option key={id} value={id}>{getEntityName(id)}</option>
+              ))}
+            </select>
+          </label>
+          <StudyInput placeholder="Shared key field..." value={sharedKey} onChange={setSharedKey} rows={2} />
+        </div>
+        <div className="mt-4">
+          <StudyInput placeholder="Explain the subtype relationship in your own words..." value={explanation} onChange={setExplanation} rows={4} />
+        </div>
+        <ConfidenceSelector value={confidence} onChange={setConfidence} />
+        {grade && (
+          <>
+            <GradeReview grade={grade} title="Subtype check" />
+            <SubtypeSummary subtype={subtype} />
+          </>
+        )}
+        <div className="mt-5 flex flex-wrap gap-2">
+          {!grade ? <PrimaryButton onClick={checkSubtypeAnswer}>Check Subtype</PrimaryButton> : <PrimaryButton onClick={() => next()}>Next Subtype</PrimaryButton>}
+          <SecondaryButton onClick={() => next()}>Skip</SecondaryButton>
+        </div>
       </DrillCard>
     </Page>
   );
@@ -1340,8 +1457,10 @@ function MockOralSession({
   const [relationshipQuestion] = useState(() => randomFrom(relationshipQuestions));
   const [seconds, setSeconds] = useState(300);
   const [sessionRef] = useState(() => progressStore.startStudySession());
-  const [entityChecks, setEntityChecks] = useState<boolean[]>([false, false, false, false, false]);
-  const [relationshipChecks, setRelationshipChecks] = useState<boolean[]>([false, false, false, false, false]);
+  const [entityAnswer, setEntityAnswer] = useState('');
+  const [relationshipAnswer, setRelationshipAnswer] = useState('');
+  const [entityGrade, setEntityGrade] = useState<GradeResult | null>(null);
+  const [relationshipGrade, setRelationshipGrade] = useState<GradeResult | null>(null);
   const [scoring, setScoring] = useState(false);
   const [finished, setFinished] = useState(false);
   const entity = entityQuestion.entityId ? entityById[entityQuestion.entityId] : undefined;
@@ -1360,15 +1479,26 @@ function MockOralSession({
     if (strict && seconds === 0 && !finished) setScoring(true);
   }, [finished, seconds, strict]);
 
+  function gradeCurrentAnswers() {
+    const nextEntityGrade =
+      entityGrade ?? gradeTextAnswer(entityAnswer, buildOralQuestionRubric(entityQuestion, entity, undefined));
+    const nextRelationshipGrade =
+      relationshipGrade ?? gradeTextAnswer(relationshipAnswer, buildOralQuestionRubric(relationshipQuestion, undefined, relationship));
+    setEntityGrade(nextEntityGrade);
+    setRelationshipGrade(nextRelationshipGrade);
+    return { nextEntityGrade, nextRelationshipGrade };
+  }
+
   function finishSession() {
     if (finished) return;
-    const entityScore = entityChecks.filter(Boolean).length;
-    const relationshipScore = relationshipChecks.filter(Boolean).length;
+    const { nextEntityGrade, nextRelationshipGrade } = gradeCurrentAnswers();
+    const entityScore = gradeToFivePointScore(nextEntityGrade);
+    const relationshipScore = gradeToFivePointScore(nextRelationshipGrade);
     const score = entityScore + relationshipScore;
     const startedAt = new Date().toISOString();
     const durationSeconds = Math.floor((Date.now() - startedAtRef) / 1000);
-    const entityResult = scoreResult(entityScore);
-    const relationshipResult = scoreResult(relationshipScore);
+    const entityResult = nextEntityGrade.result;
+    const relationshipResult = nextRelationshipGrade.result;
     progressStore.saveMockOral({
       id: `session-${Date.now()}`,
       startedAt,
@@ -1376,6 +1506,8 @@ function MockOralSession({
       relationshipQuestionId: relationshipQuestion.id,
       score,
       maxScore: 10,
+      entityAnswer: toOralAnswer(entityQuestion, entityAnswer, nextEntityGrade),
+      relationshipAnswer: toOralAnswer(relationshipQuestion, relationshipAnswer, nextRelationshipGrade),
       durationSeconds,
     });
     sessionRef.endSession(2, (entityResult === 'correct' ? 1 : 0) + (relationshipResult === 'correct' ? 1 : 0));
@@ -1392,6 +1524,7 @@ function MockOralSession({
 
   function primaryAction() {
     if (strict && !scoring) {
+      gradeCurrentAnswers();
       setScoring(true);
       return;
     }
@@ -1427,9 +1560,15 @@ function MockOralSession({
       {finished ? (
         <Card>
           <h2 className="text-2xl font-bold text-slate-950">
-            Score {entityChecks.filter(Boolean).length + relationshipChecks.filter(Boolean).length}/10
+            Score {gradeToFivePointScore(entityGrade ?? gradeTextAnswer(entityAnswer, buildOralQuestionRubric(entityQuestion, entity, undefined))) + gradeToFivePointScore(relationshipGrade ?? gradeTextAnswer(relationshipAnswer, buildOralQuestionRubric(relationshipQuestion, undefined, relationship)))}/10
           </h2>
           <p className="mt-3 text-slate-600">Session saved to local mock oral history.</p>
+          {entityGrade && <GradeReview grade={entityGrade} title="Entity question breakdown" />}
+          {relationshipGrade && <GradeReview grade={relationshipGrade} title="Relationship question breakdown" />}
+          <Card className="mt-5 border-blue-200 bg-blue-50">
+            <h3 className="text-lg font-bold text-slate-950">Recommended next drill</h3>
+            <p className="mt-2 text-slate-700">{mockOralRecommendation(entityGrade, relationshipGrade)}</p>
+          </Card>
           <div className="mt-5 flex gap-2">
             <PrimaryButton onClick={() => navigate(strict ? '/mock-oral/exam' : '/mock-oral/session')}>Start Another</PrimaryButton>
             <SecondaryButton onClick={() => navigate('/review/mock-replays')}>View Replays</SecondaryButton>
@@ -1438,8 +1577,20 @@ function MockOralSession({
         </Card>
       ) : strict && !scoring ? (
         <div className="grid gap-4 xl:grid-cols-2">
-          <ExamQuestionPanel title="Phase 1: Easy entity question" question={entityQuestion} />
-          <ExamQuestionPanel title="Phase 2: Hard relationship question" question={relationshipQuestion} />
+          <ExamQuestionPanel
+            title="Phase 1: Easy entity question"
+            question={entityQuestion}
+            notes={entityAnswer}
+            setNotes={setEntityAnswer}
+            entityIds={entity ? [entity.id] : []}
+          />
+          <ExamQuestionPanel
+            title="Phase 2: Hard relationship question"
+            question={relationshipQuestion}
+            notes={relationshipAnswer}
+            setNotes={setRelationshipAnswer}
+            entityIds={relationship ? relationshipFocusEntityIds(relationship) : []}
+          />
         </div>
       ) : (
         <div className="grid gap-4 xl:grid-cols-2">
@@ -1448,16 +1599,20 @@ function MockOralSession({
             question={entityQuestion}
             answer={entity ? <EntitySummary entity={entity} compact /> : null}
             followUp={entity ? entityFollowUp(entity) : undefined}
-            checks={entityChecks}
-            setChecks={setEntityChecks}
+            notes={entityAnswer}
+            setNotes={setEntityAnswer}
+            grade={entityGrade}
+            entityIds={entity ? [entity.id] : []}
           />
           <MockQuestionPanel
             title={strict ? 'Self-score: Hard relationship question' : 'Phase 2: Hard relationship question'}
             question={relationshipQuestion}
             answer={relationship ? <RelationshipSummary relationship={relationship} compact /> : null}
             followUp={relationship ? relationshipFollowUp(relationship) : undefined}
-            checks={relationshipChecks}
-            setChecks={setRelationshipChecks}
+            notes={relationshipAnswer}
+            setNotes={setRelationshipAnswer}
+            grade={relationshipGrade}
+            entityIds={relationship ? relationshipFocusEntityIds(relationship) : []}
           />
         </div>
       )}
@@ -1650,15 +1805,35 @@ function SettingsScreen({ progressStore }: { progressStore: ReturnType<typeof us
   );
 }
 
-function ExamQuestionPanel({ title, question }: { title: string; question: OralQuestion }) {
+function ExamQuestionPanel({
+  title,
+  question,
+  notes,
+  setNotes,
+  entityIds,
+}: {
+  title: string;
+  question: OralQuestion;
+  notes: string;
+  setNotes: (value: string) => void;
+  entityIds: string[];
+}) {
   return (
     <Card className="border-red-200 bg-red-50">
+      <div className="mb-5">
+        <ErdFocusPanel entityIds={entityIds} title="Exam visual context" compact />
+      </div>
       <p className="text-sm font-semibold uppercase text-red-700">{title}</p>
       <h2 className="mt-2 text-2xl font-bold text-slate-950">{question.prompt}</h2>
       <p className="mt-4 text-slate-700">
         Speak the answer out loud. Do not reveal answers or use hints in this phase. Use the box only for short notes if it helps you self-score later.
       </p>
-      <textarea className="mt-5 min-h-52 w-full rounded-lg border border-red-200 bg-white p-3" placeholder="Strict exam notes..." />
+      <textarea
+        className="mt-5 min-h-52 w-full rounded-lg border border-red-200 bg-white p-3"
+        placeholder="Strict exam notes..."
+        value={notes}
+        onChange={(event) => setNotes(event.target.value)}
+      />
     </Card>
   );
 }
@@ -1668,24 +1843,27 @@ function MockQuestionPanel({
   question,
   answer,
   followUp,
-  checks,
-  setChecks,
+  notes,
+  setNotes,
+  grade,
+  entityIds,
 }: {
   title: string;
   question: OralQuestion;
   answer: React.ReactNode;
   followUp?: string;
-  checks: boolean[];
-  setChecks: (checks: boolean[]) => void;
+  notes: string;
+  setNotes: (value: string) => void;
+  grade: GradeResult | null;
+  entityIds: string[];
 }) {
-  const labels =
-    question.type === 'entity'
-      ? ['Meaning clear', 'PK correct', 'FKs correct', 'Two attributes', 'Domain correct']
-      : ['Both sides stated', 'Type correct', 'FK placement', 'FK justification', 'Bridge mentioned if needed'];
   const [showAnswer, setShowAnswer] = useState(false);
 
   return (
     <Card>
+      <div className="mb-5">
+        <ErdFocusPanel entityIds={entityIds} title="Mock oral visual context" compact />
+      </div>
       <p className="text-sm font-semibold uppercase text-slate-500">{title}</p>
       <h2 className="mt-2 text-2xl font-bold text-slate-950">{question.prompt}</h2>
       {followUp && (
@@ -1694,28 +1872,20 @@ function MockQuestionPanel({
           <p className="mt-1 text-slate-800">{followUp}</p>
         </div>
       )}
-      <textarea className="mt-5 min-h-36 w-full rounded-lg border border-line p-3" placeholder="Optional speaking notes..." />
-      <div className="mt-4 grid gap-2">
-        {labels.map((label, index) => (
-          <label key={label} className="flex items-center gap-3 rounded-lg border border-line p-3">
-            <input
-              type="checkbox"
-              checked={checks[index]}
-              onChange={(event) => {
-                const next = [...checks];
-                next[index] = event.target.checked;
-                setChecks(next);
-              }}
-            />
-            <span>{label}</span>
-          </label>
-        ))}
-      </div>
-      <div className="mt-4">
-        <SecondaryButton onClick={() => setShowAnswer((value) => !value)}>
-          {showAnswer ? 'Hide Expected Answer' : 'Show Expected Answer'}
-        </SecondaryButton>
-      </div>
+      <textarea
+        className="mt-5 min-h-36 w-full rounded-lg border border-line p-3"
+        placeholder="Type bullet notes from what you said out loud. These notes will be checked when you finish."
+        value={notes}
+        onChange={(event) => setNotes(event.target.value)}
+      />
+      {grade && <GradeReview grade={grade} title="Mock oral smart check" />}
+      {grade && (
+        <div className="mt-4">
+          <SecondaryButton onClick={() => setShowAnswer((value) => !value)}>
+            {showAnswer ? 'Hide Model Answer' : 'Show Model Answer'}
+          </SecondaryButton>
+        </div>
+      )}
       {showAnswer && <div className="mt-4">{answer}</div>}
     </Card>
   );
@@ -1834,6 +2004,128 @@ function SubtypeSummary({ subtype }: { subtype: SubtypeRelationship }) {
       <p className="mt-2 text-slate-700">{subtype.description}</p>
       <InfoBlock label="Shared key" values={subtype.primaryKey} />
     </Card>
+  );
+}
+
+function GradeReview({ grade, title = 'Smart check' }: { grade: GradeResult; title?: string }) {
+  return (
+    <Card className={`mt-5 ${resultFeedbackClass(grade.result)}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold uppercase text-slate-500">{title}</p>
+          <h3 className="mt-1 text-xl font-bold text-slate-950">
+            {grade.score}/{grade.maxScore} points - {percent(grade.percentage)}
+          </h3>
+          <p className="mt-2 text-slate-700">{grade.feedback}</p>
+        </div>
+        <FeedbackBanner result={grade.result} />
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="rounded-lg border border-green-200 bg-white/80 p-3">
+          <p className="font-semibold text-green-800">Matched</p>
+          {grade.matchedCriteria.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">Nothing matched yet.</p>
+          ) : (
+            <ul className="mt-2 space-y-1 text-sm text-slate-700">
+              {grade.matchedCriteria.map((item) => (
+                <li key={item}>✓ {item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-white/80 p-3">
+          <p className="font-semibold text-amber-800">Review next</p>
+          {grade.missedCriteria.length === 0 ? (
+            <p className="mt-2 text-sm text-slate-500">No missed rubric items.</p>
+          ) : (
+            <ul className="mt-2 space-y-1 text-sm text-slate-700">
+              {grade.missedCriteria.map((item) => (
+                <li key={item}>• {item}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ErdFocusPanel({
+  entityIds,
+  title = 'ERD focus',
+  compact = false,
+}: {
+  entityIds: string[];
+  title?: string;
+  compact?: boolean;
+}) {
+  const focusHotspots = unique(entityIds)
+    .map((id) => erdHotspotByEntityId[id])
+    .filter((hotspot): hotspot is ErdHotspot => Boolean(hotspot));
+  if (focusHotspots.length === 0) return null;
+
+  const minX = Math.min(...focusHotspots.map((hotspot) => hotspot.x));
+  const maxX = Math.max(...focusHotspots.map((hotspot) => hotspot.x + hotspot.width));
+  const minY = Math.min(...focusHotspots.map((hotspot) => hotspot.y));
+  const maxY = Math.max(...focusHotspots.map((hotspot) => hotspot.y + hotspot.height));
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  const spanX = Math.max(maxX - minX, 10);
+  const spanY = Math.max(maxY - minY, 8);
+  const scale = Math.min(6, Math.max(1.4, Math.min(72 / spanX, 58 / spanY)));
+  const heightClass = compact ? 'h-56' : 'h-72';
+
+  return (
+    <Card className="border-pink-100 bg-pink-50/60">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold uppercase text-pink-600">{title}</p>
+          <p className="text-sm text-slate-600">Use the diagram context before checking your answer.</p>
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">{focusHotspots.length} table(s)</span>
+      </div>
+      <div className={`${heightClass} relative overflow-hidden rounded-lg border border-pink-100 bg-white`}>
+        <div
+          className="absolute"
+          style={{
+            left: `${50 - centerX * scale}%`,
+            top: `${50 - centerY * scale}%`,
+            width: `${scale * 100}%`,
+          }}
+        >
+          <div className="relative">
+            <img
+              src={erdImageSrc}
+              alt="Focused ERD section"
+              className="block w-full max-w-none select-none"
+              draggable={false}
+            />
+            {focusHotspots.map((hotspot) => (
+              <ErdFocusHotspotBox key={hotspot.entityId} hotspot={hotspot} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ErdFocusHotspotBox({ hotspot }: { hotspot: ErdHotspot }) {
+  const entity = entityById[hotspot.entityId];
+  return (
+    <div
+      className="absolute rounded border-2 border-pink-500 bg-pink-400/20 shadow-[0_0_14px_rgba(236,72,153,0.45)]"
+      style={{
+        left: `${hotspot.x}%`,
+        top: `${hotspot.y}%`,
+        width: `${hotspot.width}%`,
+        height: `${hotspot.height}%`,
+      }}
+    >
+      <span className="absolute -top-6 left-0 whitespace-nowrap rounded bg-pink-600 px-2 py-0.5 text-[10px] font-bold text-white">
+        {entity?.name ?? hotspot.entityId}
+      </span>
+    </div>
   );
 }
 
@@ -1984,8 +2276,26 @@ function ConfidenceSelector({ value, onChange }: { value: number; onChange: (val
   );
 }
 
-function StudyInput({ placeholder }: { placeholder: string }) {
-  return <textarea className="min-h-32 w-full rounded-lg border border-line p-3" placeholder={placeholder} />;
+function StudyInput({
+  placeholder,
+  value,
+  onChange,
+  rows = 4,
+}: {
+  placeholder: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  rows?: number;
+}) {
+  return (
+    <textarea
+      className="min-h-32 w-full rounded-lg border border-line p-3"
+      placeholder={placeholder}
+      value={value}
+      rows={rows}
+      onChange={(event) => onChange?.(event.target.value)}
+    />
+  );
 }
 
 function SelectBox({ label, children }: { label: string; children: React.ReactNode }) {
@@ -2290,9 +2600,262 @@ function itemRoute(id: string) {
   return '/study';
 }
 
+function buildEntityRecallRubric(entity: Entity, mode: Exclude<DrillMode, 'purpose'>) {
+  const expected = getEntityCorrectAnswers(entity, mode);
+  return {
+    id: `recall-${entity.id}-${mode}`,
+    label: `${entity.name} ${mode} recall`,
+    criteria: expected.map((value) => ({
+      id: value,
+      label: mode === 'domain' ? getDomainName(value) : value,
+      terms: mode === 'domain' ? [getDomainName(value), value] : [value, value.replace(/_/g, ' ')],
+    })),
+  };
+}
+
+function relationshipFocusEntityIds(relationship: Relationship) {
+  return unique([
+    relationship.entityA,
+    relationship.entityB,
+    relationship.associativeEntityId ?? '',
+    relationship.fkTable ?? '',
+  ]).filter(Boolean);
+}
+
+function bridgeFocusEntityIds(bridge: AssociativeEntity) {
+  return unique([...bridge.resolves, bridge.id]);
+}
+
+function toOralAnswer(question: OralQuestion, userAnswer: string, grade: GradeResult) {
+  return {
+    questionId: question.id,
+    questionType: question.type,
+    userAnswer,
+    expectedChecklist: question.expectedChecklist,
+    checklistMatches: grade.matchedCriteria,
+    result: grade.result,
+    score: gradeToFivePointScore(grade),
+    maxScore: 5,
+  };
+}
+
+function mockOralRecommendation(entityGrade: GradeResult | null, relationshipGrade: GradeResult | null) {
+  if (relationshipGrade && relationshipGrade.result !== 'correct') {
+    if (relationshipGrade.missedCriteria.some((item) => item.toLowerCase().includes('fk') || item.toLowerCase().includes('bridge'))) {
+      return 'Go to FK Logic or Associative Entity Drill next. The relationship answer missed FK or bridge-table reasoning.';
+    }
+    return 'Go to Business Rule Builder next. The relationship answer needs stronger forward/reverse rule recall.';
+  }
+  if (entityGrade && entityGrade.result !== 'correct') {
+    return 'Go to Entity Mastery or Free Recall next. The entity answer missed key fields, attributes, or domain placement.';
+  }
+  return 'Strong mock oral. Run another strict exam mode session or switch to weak-area Visual ERD practice.';
+}
+
+function buildMatchingPrompt(progress: ProgressState): MatchingPrompt {
+  const category = randomFrom(['Entity to domain', 'Entity to primary key', 'Relationship to cardinality', 'Relationship to FK or bridge', 'M:N pair to bridge'] as const);
+  if (category === 'Entity to domain') {
+    const entity = pickEntity(progress.itemProgress);
+    return {
+      category,
+      prompt: `Which domain contains ${entity.name}?`,
+      answerId: entity.domainId,
+      answerLabel: getDomainName(entity.domainId),
+      choices: domains.map((domain) => ({ id: domain.id, label: domain.name })),
+      itemId: entity.id,
+      itemName: entity.name,
+      weakCategory: 'entity',
+      entityIds: [entity.id],
+      explanation: `${entity.name} belongs to ${getDomainName(entity.domainId)}.`,
+    };
+  }
+  if (category === 'Entity to primary key') {
+    const entity = pickEntity(progress.itemProgress);
+    const answer = entity.primaryKey.join(', ');
+    const decoys = shuffle(unique(entities.flatMap((item) => item.primaryKey).filter((key) => !entity.primaryKey.includes(key)))).slice(0, 5);
+    return {
+      category,
+      prompt: `Which primary key identifies ${entity.name}?`,
+      answerId: answer,
+      answerLabel: answer,
+      choices: shuffle([answer, ...decoys].map((value) => ({ id: value, label: value }))),
+      itemId: entity.id,
+      itemName: entity.name,
+      weakCategory: 'entity',
+      entityIds: [entity.id],
+      explanation: `${answer} uniquely identifies ${entity.name}.`,
+    };
+  }
+  if (category === 'Relationship to cardinality') {
+    const relationship = pickRelationship(progress.itemProgress);
+    return {
+      category,
+      prompt: `What is the cardinality for ${relationshipLabel(relationship)}?`,
+      answerId: relationship.cardinality,
+      answerLabel: relationship.cardinality,
+      choices: ['1:1', '1:M', 'M:N'].map((value) => ({ id: value, label: value })),
+      itemId: relationship.id,
+      itemName: relationshipLabel(relationship),
+      weakCategory: 'cardinality',
+      entityIds: relationshipFocusEntityIds(relationship),
+      explanation: `${relationship.ruleForward} ${relationship.ruleReverse}`,
+    };
+  }
+  if (category === 'Relationship to FK or bridge') {
+    const relationship = pickRelationship(progress.itemProgress, relationships.filter((item) => item.fkTable || item.associativeEntityId));
+    const answer = relationship.requiresAssociativeEntity ? relationship.associativeEntityId ?? relationship.fkTable ?? '' : relationship.fkTable ?? '';
+    const choices = unique([relationship.entityA, relationship.entityB, relationship.fkTable ?? '', relationship.associativeEntityId ?? '', ...shuffle(entities.map((entity) => entity.id)).slice(0, 3)])
+      .filter(Boolean)
+      .slice(0, 6);
+    return {
+      category,
+      prompt: `Which table holds the FK or bridge for ${relationshipLabel(relationship)}?`,
+      answerId: answer,
+      answerLabel: getEntityName(answer),
+      choices: shuffle(choices.map((id) => ({ id, label: getEntityName(id) }))),
+      itemId: relationship.id,
+      itemName: relationshipLabel(relationship),
+      weakCategory: 'fk-logic',
+      entityIds: relationshipFocusEntityIds(relationship),
+      explanation: relationship.oralCue,
+    };
+  }
+
+  const bridge = pickAssociativeEntity(progress.itemProgress);
+  return {
+    category,
+    prompt: `Which bridge resolves ${bridge.resolves.map(getEntityName).join(' and ')}?`,
+    answerId: bridge.id,
+    answerLabel: bridge.name,
+    choices: shuffle(associativeEntities.map((candidate) => ({ id: candidate.id, label: candidate.name }))),
+    itemId: bridge.id,
+    itemName: bridge.name,
+    weakCategory: 'associative',
+    entityIds: bridgeFocusEntityIds(bridge),
+    explanation: bridge.description,
+  };
+}
+
 // New feature components
 
 function QuickDrills({ progressStore }: { progressStore: ReturnType<typeof useProgressStore> }) {
+  const [seconds, setSeconds] = useState(150);
+  const [prompt, setPrompt] = useState<MatchingPrompt>(() => buildMatchingPrompt(progressStore.progress));
+  const [selected, setSelected] = useState('');
+  const [feedback, setFeedback] = useState<MasteryResult | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [correct, setCorrect] = useState(0);
+  const [misses, setMisses] = useState<MatchingPrompt[]>([]);
+  const [finished, setFinished] = useState(false);
+
+  useEffect(() => {
+    if (finished) return undefined;
+    const id = window.setInterval(() => {
+      setSeconds((value) => {
+        if (value <= 1) {
+          setFinished(true);
+          return 0;
+        }
+        return value - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [finished]);
+
+  function chooseAnswer(choiceId: string) {
+    if (feedback) return;
+    const result: MasteryResult = choiceId === prompt.answerId ? 'correct' : 'incorrect';
+    setSelected(choiceId);
+    setFeedback(result);
+    if (result === 'correct') setCorrect((value) => value + 1);
+    setAttempts((value) => value + 1);
+    if (result === 'incorrect') setMisses((current) => [prompt, ...current].slice(0, 8));
+    progressStore.recordAttempt(prompt.itemId, result, 3);
+    progressStore.recordWeakSpot(prompt.itemId, prompt.itemName, prompt.weakCategory, result);
+  }
+
+  function next() {
+    setPrompt(buildMatchingPrompt(progressStore.progress));
+    setSelected('');
+    setFeedback(null);
+  }
+
+  return (
+    <Page title="Matching Drills" eyebrow="Timed active recall">
+      <div className="mb-4 rounded-lg border border-line bg-white p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-500">TIME REMAINING</p>
+          <p className={`text-4xl font-bold ${seconds <= 20 ? 'text-red-700' : 'text-slate-950'}`}>{formatTimer(seconds)}</p>
+        </div>
+        <p className="mt-3 text-sm text-slate-600">
+          Pick the matching answer. This drills domains, PKs, relationship cardinality, FK/bridge tables, and associative entities.
+        </p>
+        <p className="mt-2 text-sm text-slate-600">{attempts} attempted - {correct} correct</p>
+      </div>
+
+      {finished ? (
+        <Card>
+          <h2 className="text-2xl font-bold text-slate-950">Final score: {correct}/{attempts}</h2>
+          <p className="mt-2 text-slate-600">Accuracy: {attempts === 0 ? '-' : percent(correct / attempts)}</p>
+          {misses.length > 0 && (
+            <div className="mt-5">
+              <h3 className="font-bold text-slate-950">Missed matches to review</h3>
+              <div className="mt-3 grid gap-2">
+                {misses.map((miss) => (
+                  <div key={`${miss.itemId}-${miss.category}`} className="rounded-lg border border-line p-3">
+                    <p className="font-semibold text-slate-950">{miss.prompt}</p>
+                    <p className="text-sm text-slate-600">Answer: {miss.answerLabel}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mt-5 flex gap-2">
+            <PrimaryButton onClick={() => location.reload()}>Try Again</PrimaryButton>
+            <SecondaryButton onClick={() => location.pathname = '/practice'}>Back to Practice</SecondaryButton>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+          <ErdFocusPanel entityIds={prompt.entityIds} title="Visual clue" />
+          <Card>
+            <p className="text-sm font-semibold uppercase text-pink-600">{prompt.category}</p>
+            <h2 className="mt-2 text-2xl font-bold text-slate-950">{prompt.prompt}</h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {prompt.choices.map((choice) => (
+                <button
+                  key={choice.id}
+                  onClick={() => chooseAnswer(choice.id)}
+                  className={`rounded-lg border px-4 py-3 text-left font-semibold transition ${
+                    selected === choice.id
+                      ? feedback === 'correct'
+                        ? 'border-green-500 bg-green-50 text-green-800'
+                        : 'border-red-500 bg-red-50 text-red-800'
+                      : 'border-line bg-white hover:border-blue-300'
+                  }`}
+                >
+                  {choice.label}
+                </button>
+              ))}
+            </div>
+            {feedback && (
+              <Card className={`mt-5 ${resultFeedbackClass(feedback)}`}>
+                <FeedbackBanner result={feedback} />
+                <p className="mt-2 font-semibold text-slate-950">{feedback === 'correct' ? 'Correct match.' : `Expected: ${prompt.answerLabel}`}</p>
+                <p className="mt-2 text-slate-700">{prompt.explanation}</p>
+                <div className="mt-4">
+                  <PrimaryButton onClick={next}>Next Match</PrimaryButton>
+                </div>
+              </Card>
+            )}
+          </Card>
+        </div>
+      )}
+    </Page>
+  );
+}
+
+function LegacyQuickDrills({ progressStore }: { progressStore: ReturnType<typeof useProgressStore> }) {
   const [seconds, setSeconds] = useState(120);
   const [entityPool] = useState(() => randomFrom([entities, relationships]));
   const [current, setCurrent] = useState(() => entityPool === entities ? pickEntity(progressStore.progress.itemProgress) : pickRelationship(progressStore.progress.itemProgress));
@@ -2375,24 +2938,38 @@ function QuickDrills({ progressStore }: { progressStore: ReturnType<typeof usePr
 }
 
 function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof useProgressStore> }) {
-  const [entity] = useState(() => pickEntity(progressStore.progress.itemProgress));
-  const [mode] = useState<Exclude<DrillMode, 'purpose'>>(() => randomFrom(['pk', 'fk', 'attributes', 'domain'] as const));
+  const [entity, setEntity] = useState(() => pickEntity(progressStore.progress.itemProgress));
+  const [mode, setMode] = useState<Exclude<DrillMode, 'purpose'>>(() => randomFrom(['pk', 'fk', 'attributes', 'domain'] as const));
   const [answer, setAnswer] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [grade, setGrade] = useState<GradeResult | null>(null);
   const [confidence, setConfidence] = useState(3);
 
   const expected = getEntityCorrectAnswers(entity, mode).map((value) => (mode === 'domain' ? getDomainName(value) : value));
 
   function submit() {
     setSubmitted(true);
-    const result = answer.toLowerCase().includes(expected[0].toLowerCase()) ? 'correct' : 'incorrect';
-    progressStore.recordAttempt(entity.id, result, confidence);
-    progressStore.recordWeakSpot(entity.id, entity.name, 'entity', result);
+    const checked = gradeTextAnswer(answer, buildEntityRecallRubric(entity, mode));
+    setGrade(checked);
+    progressStore.recordAttempt(entity.id, checked.result, confidence);
+    progressStore.recordWeakSpot(entity.id, entity.name, 'entity', checked.result);
+  }
+
+  function next() {
+    setEntity(pickEntity(progressStore.progress.itemProgress));
+    setMode(randomFrom(['pk', 'fk', 'attributes', 'domain'] as const));
+    setAnswer('');
+    setSubmitted(false);
+    setGrade(null);
+    setConfidence(3);
   }
 
   return (
     <Page title="Free Recall" eyebrow="Type your answer">
       <Card>
+        <div className="mb-5">
+          <ErdFocusPanel entityIds={[entity.id]} title="Visual recall context" compact />
+        </div>
         <p className="text-sm font-semibold text-slate-500 uppercase">
           {mode === 'pk' && 'Primary Key'}
           {mode === 'fk' && 'Foreign Keys'}
@@ -2419,10 +2996,16 @@ function FreeRecallDrill({ progressStore }: { progressStore: ReturnType<typeof u
         )}
 
         {submitted && (
-          <div className="mt-4 rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
-            <p className="font-bold text-blue-900">Expected: {expected.join(', ')}</p>
-            <p className="mt-2 font-bold text-slate-950">Your answer: {answer || '(empty)'}</p>
-          </div>
+          <>
+            {grade && <GradeReview grade={grade} title="Free recall check" />}
+            <div className="mt-4 rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+              <p className="font-bold text-blue-900">Expected: {expected.join(', ')}</p>
+              <p className="mt-2 font-bold text-slate-950">Your answer: {answer || '(empty)'}</p>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <PrimaryButton onClick={next}>Next Recall</PrimaryButton>
+            </div>
+          </>
         )}
       </Card>
     </Page>
