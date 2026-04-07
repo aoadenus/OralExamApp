@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   associativeById,
   associativeEntities,
@@ -739,11 +739,11 @@ function VisualErdPractice({ progressStore }: { progressStore: ReturnType<typeof
           <div>
             <h2 className="text-xl font-bold text-slate-950">Actual ERD viewer</h2>
             <p className="text-sm text-slate-500">
-              Zoom up to 800%. Use the scrollbars to move around the wide diagram.
+              Zoom up to 1000%. Use the scrollbars to move around the wide diagram.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-            {[0.75, 1, 1.5, 2.5, 4, 6, 8].map((value) => (
+            {[0.75, 1, 1.5, 2.5, 4, 6, 8, 10].map((value) => (
               <button
                 key={value}
                 onClick={() => setZoom(value)}
@@ -763,7 +763,7 @@ function VisualErdPractice({ progressStore }: { progressStore: ReturnType<typeof
             className="mt-2 block w-full"
             type="range"
             min="0.5"
-            max="8"
+            max="10"
             step="0.25"
             value={zoom}
             onChange={(event) => setZoom(Number(event.target.value))}
@@ -2272,51 +2272,65 @@ function ErdFocusPanel({
   title?: string;
   compact?: boolean;
 }) {
+  const viewerRef = useRef<HTMLDivElement>(null);
   const focusHotspots = unique(entityIds)
     .map((id) => erdHotspotByEntityId[id])
     .filter((hotspot): hotspot is ErdHotspot => Boolean(hotspot));
-  if (focusHotspots.length === 0) return null;
 
-  const minX = Math.min(...focusHotspots.map((hotspot) => hotspot.x));
-  const maxX = Math.max(...focusHotspots.map((hotspot) => hotspot.x + hotspot.width));
-  const minY = Math.min(...focusHotspots.map((hotspot) => hotspot.y));
-  const maxY = Math.max(...focusHotspots.map((hotspot) => hotspot.y + hotspot.height));
+  const hasFocus = focusHotspots.length > 0;
+  const minX = hasFocus ? Math.min(...focusHotspots.map((hotspot) => hotspot.x)) : 0;
+  const maxX = hasFocus ? Math.max(...focusHotspots.map((hotspot) => hotspot.x + hotspot.width)) : 0;
+  const minY = hasFocus ? Math.min(...focusHotspots.map((hotspot) => hotspot.y)) : 0;
+  const maxY = hasFocus ? Math.max(...focusHotspots.map((hotspot) => hotspot.y + hotspot.height)) : 0;
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
   const spanX = Math.max(maxX - minX, 10);
   const spanY = Math.max(maxY - minY, 8);
-  const scale = Math.min(6, Math.max(1.4, Math.min(72 / spanX, 58 / spanY)));
+  const scale = Math.min(10, Math.max(compact ? 3.5 : 3, Math.min(120 / spanX, 90 / spanY)));
   const heightClass = compact ? 'h-56' : 'h-72';
+
+  function centerFocusViewer() {
+    const viewer = viewerRef.current;
+    if (!viewer || !hasFocus) return;
+    viewer.scrollLeft = Math.max(0, (centerX / 100) * viewer.scrollWidth - viewer.clientWidth / 2);
+    viewer.scrollTop = Math.max(0, (centerY / 100) * viewer.scrollHeight - viewer.clientHeight / 2);
+  }
+
+  useEffect(() => {
+    if (!hasFocus) return;
+    const frame = window.requestAnimationFrame(centerFocusViewer);
+    const fallback = window.setTimeout(centerFocusViewer, 250);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(fallback);
+    };
+  }, [hasFocus, centerX, centerY, scale, entityIds.join('|')]);
+
+  if (!hasFocus) return null;
 
   return (
     <Card className="border-pink-100 bg-pink-50/60">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-semibold uppercase text-pink-600">{title}</p>
-          <p className="text-sm text-slate-600">Use the diagram context before checking your answer.</p>
+          <p className="text-sm text-slate-600">Auto-centered on the ERD section. Scroll inside the box if you want more context.</p>
         </div>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">{focusHotspots.length} table(s)</span>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600">
+          {focusHotspots.length} table(s) • {Math.round(scale * 100)}% zoom
+        </span>
       </div>
-      <div className={`${heightClass} relative overflow-hidden rounded-lg border border-pink-100 bg-white`}>
-        <div
-          className="absolute"
-          style={{
-            left: `${50 - centerX * scale}%`,
-            top: `${50 - centerY * scale}%`,
-            width: `${scale * 100}%`,
-          }}
-        >
-          <div className="relative">
-            <img
-              src={erdImageSrc}
-              alt="Focused ERD section"
-              className="block w-full max-w-none select-none"
-              draggable={false}
-            />
-            {focusHotspots.map((hotspot) => (
-              <ErdFocusHotspotBox key={hotspot.entityId} hotspot={hotspot} />
-            ))}
-          </div>
+      <div ref={viewerRef} className={`${heightClass} overflow-auto rounded-lg border border-pink-100 bg-white`}>
+        <div className="relative" style={{ width: `${scale * 100}%`, minWidth: '100%' }}>
+          <img
+            src={erdImageSrc}
+            alt="Focused ERD section"
+            className="block w-full max-w-none select-none"
+            draggable={false}
+            onLoad={centerFocusViewer}
+          />
+          {focusHotspots.map((hotspot) => (
+            <ErdFocusHotspotBox key={hotspot.entityId} hotspot={hotspot} />
+          ))}
         </div>
       </div>
     </Card>
