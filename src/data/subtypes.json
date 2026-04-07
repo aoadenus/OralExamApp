@@ -1,0 +1,16 @@
+[
+  {
+    "id": "seasonalitem-product",
+    "subtypeId": "seasonalitem",
+    "supertypeId": "product",
+    "description": "SeasonalItem specializes Product for products that are only sold in a named season or date range.",
+    "primaryKey": ["product_id"]
+  },
+  {
+    "id": "giftcard-paymentmethod",
+    "subtypeId": "giftcard",
+    "supertypeId": "paymentmethod",
+    "description": "GiftCard specializes PaymentMethod for gift card balance, card number, and expiry data.",
+    "primaryKey": ["payment_method_id"]
+  }
+]

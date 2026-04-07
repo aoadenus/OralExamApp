@@ -1,0 +1,44 @@
+[
+  {
+    "id": "customer-sales",
+    "name": "Customer & Sales",
+    "description": "Customer records, orders, addresses, payment methods, store fulfillment, and sales reporting.",
+    "entityIds": ["customer", "order", "address", "zipcode", "loyaltyprogram", "payment", "paymentmethod", "giftcard", "storelocation", "salesreport", "orderline"],
+    "relationshipIds": ["rule-01", "rule-02", "rule-03", "rule-04", "rule-05", "rule-06", "rule-07", "rule-08", "rule-09", "rule-10", "rule-11", "rule-12"]
+  },
+  {
+    "id": "product-marketing",
+    "name": "Product & Marketing",
+    "description": "Product catalog structure, categories, seasonal items, promotions, discounts, reviews, and ratings.",
+    "entityIds": ["product", "productcategory", "seasonalitem", "promotion", "discount", "review", "rating", "productpromotion"],
+    "relationshipIds": ["rule-13", "rule-14", "rule-15", "rule-16", "rule-17", "rule-18"]
+  },
+  {
+    "id": "inventory-supply",
+    "name": "Inventory & Supply Chain",
+    "description": "Ingredients, inventory records, suppliers, invoices, recipes, waste, budgets, and expenses.",
+    "entityIds": ["ingredient", "inventory", "supplier", "invoice", "expense", "budget", "wastelog", "supplieringredient", "recipe"],
+    "relationshipIds": ["rule-19", "rule-20", "rule-21", "rule-22", "rule-23", "rule-24", "rule-25", "rule-26", "rule-27", "rule-28", "rule-29"]
+  },
+  {
+    "id": "employee-operations",
+    "name": "Employee & Operations",
+    "description": "Departments, roles, employees, shifts, training records, and order assignments.",
+    "entityIds": ["department", "role", "employee", "shift", "training", "orderassignment"],
+    "relationshipIds": ["rule-30", "rule-31", "rule-32", "rule-33", "rule-34", "rule-35", "rule-36", "rule-37"]
+  },
+  {
+    "id": "catering-delivery",
+    "name": "Catering & Delivery",
+    "description": "Events, event types, catering orders, delivery assignments, and destination addresses.",
+    "entityIds": ["eventtype", "event", "catering", "delivery"],
+    "relationshipIds": ["rule-38", "rule-39", "rule-40", "rule-41", "rule-42", "rule-43", "rule-44", "rule-45"]
+  },
+  {
+    "id": "compliance-regulatory",
+    "name": "Compliance & Regulatory",
+    "description": "Nutritional information, allergy information, and customer allergy tracking records.",
+    "entityIds": ["nutritionalinfo", "allergyinfo", "customerallergyinfo"],
+    "relationshipIds": ["rule-46"]
+  }
+]

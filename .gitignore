@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+*.local
+*.log
+
+# Local class source documents copied into the workspace.
+# The app uses structured JSON and public/erd assets, so these root files do not need to be published.
+*.docx
+*.xlsx
+*.pdf
+!public/**/*.pdf

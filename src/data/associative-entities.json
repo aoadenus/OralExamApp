@@ -1,0 +1,50 @@
+[
+  {
+    "id": "orderline",
+    "name": "OrderLine",
+    "resolves": ["order", "product"],
+    "compositePrimaryKey": ["order_id", "product_id"],
+    "attributes": ["quantity", "unit_price"],
+    "description": "Resolves the many-to-many relationship between orders and products."
+  },
+  {
+    "id": "productpromotion",
+    "name": "ProductPromotion",
+    "resolves": ["product", "promotion"],
+    "compositePrimaryKey": ["product_id", "promotion_id"],
+    "attributes": ["featured_flag", "display_order"],
+    "description": "Resolves the many-to-many relationship between products and promotions."
+  },
+  {
+    "id": "supplieringredient",
+    "name": "SupplierIngredient",
+    "resolves": ["supplier", "ingredient"],
+    "compositePrimaryKey": ["supplier_id", "ingredient_id"],
+    "attributes": ["unit_cost", "lead_time_days"],
+    "description": "Resolves the many-to-many relationship between suppliers and ingredients."
+  },
+  {
+    "id": "recipe",
+    "name": "Recipe",
+    "resolves": ["product", "ingredient"],
+    "compositePrimaryKey": ["product_id", "ingredient_id"],
+    "attributes": ["quantity_required", "unit"],
+    "description": "Resolves the many-to-many relationship between products and ingredients."
+  },
+  {
+    "id": "orderassignment",
+    "name": "OrderAssignment",
+    "resolves": ["order", "employee", "shift"],
+    "compositePrimaryKey": ["order_id", "employee_id", "shift_id"],
+    "attributes": ["assigned_at", "role_on_order"],
+    "description": "Resolves order work assignments across orders, employees, and shifts."
+  },
+  {
+    "id": "customerallergyinfo",
+    "name": "CustomerAllergyInfo",
+    "resolves": ["customer", "allergyinfo"],
+    "compositePrimaryKey": ["customer_id", "allergy_info_id"],
+    "attributes": ["severity", "notes"],
+    "description": "Resolves the customer-to-allergy tracking relationship with severity and notes."
+  }
+]

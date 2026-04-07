@@ -1,0 +1,352 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #0f172a;
+  background: #fdf8f0;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ===== WHIMSICAL KEYFRAME ANIMATIONS ===== */
+
+@keyframes correct-pulse {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.45);
+  }
+  55% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 14px rgba(22, 163, 74, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  15% {
+    transform: translateX(-6px) rotate(-1deg);
+  }
+  30% {
+    transform: translateX(6px) rotate(1deg);
+  }
+  45% {
+    transform: translateX(-5px) rotate(-0.5deg);
+  }
+  60% {
+    transform: translateX(5px) rotate(0.5deg);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.05);
+  }
+  80% {
+    transform: translateY(1px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flip-in {
+  0% {
+    opacity: 0.2;
+    transform: rotateX(-10deg) translateY(10px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: rotateX(0) translateY(0) scale(1);
+  }
+}
+
+/* NEW WHIMSICAL ANIMATIONS */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+  66% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(8deg); }
+  60% { transform: rotate(-5deg); }
+  80% { transform: rotate(5deg); }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(-20px);
+  }
+  50% {
+    transform: scale(1.1) translateY(-4px);
+  }
+  70% {
+    transform: scale(0.95) translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  25% { opacity: 0.8; transform: scale(1.2) rotate(15deg); }
+  50% { opacity: 1; transform: scale(0.9) rotate(-10deg); }
+  75% { opacity: 0.9; transform: scale(1.1) rotate(8deg); }
+}
+
+@keyframes confetti-drop {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(24px) rotate(360deg); opacity: 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 18px 6px rgba(251, 191, 36, 0.6); }
+}
+
+@keyframes slide-in-left {
+  0% { opacity: 0; transform: translateX(-20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes emoji-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.15); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+}
+
+/* ===== ANIMATION CLASSES ===== */
+
+.animate-correct-pulse {
+  animation: correct-pulse 700ms ease-out;
+}
+
+.animate-shake {
+  animation: shake 480ms ease-in-out;
+}
+
+.animate-pop {
+  animation: pop 560ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-rise {
+  animation: rise 420ms ease-out;
+}
+
+.animate-flip-in {
+  animation: flip-in 380ms ease-out;
+  transform-origin: top center;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.6s ease-in-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.4s ease-out;
+}
+
+.animate-heartbeat {
+  animation: heartbeat 1.4s ease-in-out infinite;
+}
+
+/* ===== WHIMSICAL BAKERY DECORATION ===== */
+
+.bakery-gradient-bg {
+  background: linear-gradient(135deg, #fdf8f0 0%, #fef3e2 50%, #fdf0f8 100%);
+}
+
+.nav-brand-shimmer {
+  background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Floating emoji decorations */
+.emoji-float {
+  animation: float 3.5s ease-in-out infinite;
+  display: inline-block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.emoji-float-delayed {
+  animation: float 3.5s ease-in-out infinite;
+  animation-delay: -1.2s;
+  display: inline-block;
+}
+
+.emoji-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* Confetti particles for correct answers */
+.confetti-particle {
+  position: absolute;
+  font-size: 1rem;
+  animation: confetti-drop 0.8s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Card hover magic */
+.card-hover-magic {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover-magic:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.12);
+}
+
+/* Streak badge glow */
+.streak-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Pastel button variants */
+.btn-whimsy-green {
+  background: linear-gradient(135deg, #34d399, #059669);
+  color: white;
+  transition: all 0.2s ease;
+}
+.btn-whimsy-green:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-whimsy-rose {
+  background: linear-gradient(135deg, #fb7185, #e11d48);
+  color: white;
+  transition: all 0.2s ease;
+}
+.btn-whimsy-rose:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
+}
+
+/* Dashed practice card border */
+.border-dashed-cute {
+  border: 2px dashed #c4b5fd;
+  background: linear-gradient(135deg, #faf5ff, #f0f9ff);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-correct-pulse,
+  .animate-shake,
+  .animate-pop,
+  .animate-rise,
+  .animate-flip-in,
+  .animate-float,
+  .animate-wiggle,
+  .animate-bounce-in,
+  .animate-sparkle,
+  .animate-glow-pulse,
+  .animate-slide-in-left,
+  .animate-heartbeat,
+  .emoji-float,
+  .emoji-float-delayed,
+  .emoji-sparkle {
+    animation: none;
+  }
+}
