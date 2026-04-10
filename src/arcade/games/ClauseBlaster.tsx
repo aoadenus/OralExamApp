@@ -243,7 +243,7 @@ export function ClauseBlasterGame({ navigate, progress }: { navigate: Navigate; 
           </div>
 
           {/* Battle area */}
-          <div className="relative h-[400px] overflow-hidden rounded-2xl border border-slate-700/40 bg-[#0D1117]">
+          <div className="relative h-[300px] sm:h-[400px] overflow-hidden rounded-2xl border border-slate-700/40 bg-[#0D1117]">
             <div className="absolute inset-0 bg-[linear-gradient(rgba(0,229,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,229,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
             <AnimatePresence>
               {enemies.filter((e) => e.status === 'falling').map((enemy) => (

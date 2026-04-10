@@ -29,7 +29,7 @@ export function ArcadeScoreboard({ navigate, progress }: { navigate: Navigate; p
     >
       <div className="space-y-6">
         {/* Stats grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatBlock label="Total XP" value={arcade.xp.toString()} icon="⚡" color="text-cyan-300" />
           <StatBlock label="Rank" value={arcade.rank.rank} icon="🎖️" color="text-fuchsia-300" />
           <StatBlock label="Games Played" value={arcade.totalGamesPlayed.toString()} icon="🎮" color="text-emerald-300" />
