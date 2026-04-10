@@ -32,7 +32,7 @@ export function SqlGamesLab({ navigate, progressStore }: { navigate: Navigate; p
   </div>
 </header>
 
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
         {modeCards.map((item) => (
           <button
             key={item.mode}

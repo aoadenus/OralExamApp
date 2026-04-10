@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   associativeById,
   associativeEntities,
@@ -192,9 +192,17 @@ function RouteRenderer({
   return <NotFound navigate={navigate} />;
 }
 
-function AppShell({ children, path, navigate }: { children: React.ReactNode; path: string; navigate: Navigate }) {
+function AppShell({ children, path, navigate }: { children: ReactNode; path: string; navigate: Navigate }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleMobileNav = (p: string) => {
+    navigate(p);
+    setMobileMenuOpen(false);
+  };
+
   return (
     <div className="mx-auto flex min-h-screen max-w-[1920px]">
+      {/* Desktop Sidebar */}
       <aside
         className="sticky top-0 hidden h-screen w-[clamp(15rem,22vw,21rem)] shrink-0 overflow-y-auto border-r border-pink-100 bg-white/90 px-4 py-6 shadow-[2px_0_16px_rgba(236,72,153,0.06)] lg:block xl:px-5"
         style={{ backdropFilter: 'blur(8px)' }}
@@ -232,25 +240,76 @@ function AppShell({ children, path, navigate }: { children: React.ReactNode; pat
           </nav>
         </div>
       </aside>
-      <main className="min-w-0 flex-1 overflow-x-hidden px-4 pb-24 pt-4 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
-      <nav
-        aria-label="Mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-pink-100 bg-white/95 px-2 py-2 shadow-[0_-4px_20px_rgba(236,72,153,0.08)] lg:hidden"
-        style={{ backdropFilter: 'blur(8px)' }}
-      >
-        {navItems.slice(0, 5).map((item) => (
-          <button
-            key={item.path}
-            onClick={() => navigate(item.path)}
-            className={`rounded-lg px-1 py-2 text-[10px] font-semibold flex flex-col items-center gap-0.5 ${
-              isActivePath(path, item.path) ? 'bg-pink-50 text-pink-600' : 'text-slate-500'
-            }`}
-          >
-            <span className="text-[11px] leading-none">{item.label.split(' ')[0]}</span>
-            <span className="leading-none">{item.label.split(' ')[1] ?? ''}</span>
-          </button>
-        ))}
-      </nav>
+
+      {/* Mobile top bar */}
+      <div className="fixed inset-x-0 top-0 z-30 flex items-center justify-between border-b border-pink-100 bg-white/95 px-4 py-3 lg:hidden" style={{ backdropFilter: 'blur(8px)' }}>
+        <button onClick={() => navigate('/')} className="flex items-center gap-2">
+          <span className="text-lg">🗄️</span>
+          <span className="text-sm font-extrabold" style={{ background: 'linear-gradient(135deg,#2563eb,#7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            SQL Oral Trainer
+          </span>
+        </button>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+          aria-label="Toggle menu"
+        >
+          <span className="text-lg">{mobileMenuOpen ? '✕' : '☰'}</span>
+        </button>
+      </div>
+
+      {/* Mobile slide-out menu */}
+      {mobileMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+          <aside className="fixed inset-y-0 left-0 z-40 w-72 overflow-y-auto bg-white px-4 py-6 shadow-2xl lg:hidden">
+            <button className="mb-6 text-left" onClick={() => handleMobileNav('/')}>
+              <span className="mb-1 block text-xl">🗄️</span>
+              <span className="block text-xs font-bold uppercase tracking-widest text-blue-500">Mama's Little Bakery</span>
+              <span className="block text-lg font-extrabold leading-tight" style={{ background: 'linear-gradient(135deg,#2563eb,#7c3aed,#0891b2)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                SQL Oral Trainer
+              </span>
+            </button>
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">SQL Prep</p>
+            <nav className="space-y-1">
+              {navItems.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => handleMobileNav(item.path)}
+                  className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold leading-snug transition-all ${
+                    isActivePath(path, item.path)
+                      ? 'bg-gradient-to-r from-pink-50 to-purple-50 text-pink-700 border border-pink-100'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">ERD Vault</p>
+              <nav className="space-y-1">
+                {erdVaultNavItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => handleMobileNav(item.path)}
+                    className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold leading-snug transition-all ${
+                      isActivePath(path, item.path)
+                        ? 'bg-gradient-to-r from-pink-50 to-purple-50 text-pink-700 border border-pink-100'
+                        : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* Main content - add top padding on mobile for sticky header */}
+      <main className="min-w-0 flex-1 overflow-x-hidden px-3 pb-6 pt-16 sm:px-5 md:px-6 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
     </div>
   );
 }
@@ -356,7 +415,7 @@ function Dashboard({
               <ReadinessRing value={sqlReadiness} />
             </div>
           </div>
-          <div className="mt-6 hidden gap-3 sm:grid sm:grid-cols-4">
+          <div className="mt-6 hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4">
             <Metric label="SQL Attempted" value={String(sqlAttempted)} />
             <Metric label="SQL Mastered" value={String(sqlMastered)} />
             <Metric label="Streak" value={String(progress.streak)} />
@@ -587,7 +646,7 @@ function SqlStudyPlan({
 
       <Card className="mb-6 border-slate-200">
         <h2 className="text-xl font-bold text-slate-950">Weekly Overview</h2>
-        <div className="mt-4 grid gap-2 md:grid-cols-5">
+        <div className="mt-4 grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
           {weekly.map(([day, focus]) => (
             <div key={day} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{day}</p>
@@ -624,7 +683,7 @@ function SqlErdBackupReference({ navigate, progressStore }: { navigate: Navigate
         <p className="mt-2 text-slate-700">
           If you get stuck because you cannot remember which table connects to which, confirm the schema path here and then go straight back to the SQL requirement.
         </p>
-        <div className="mt-3 grid grid-cols-5 gap-1 text-center text-[11px] font-bold text-slate-500">
+        <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-1 text-center text-[11px] font-bold text-slate-500">
           <span className="rounded-lg bg-white/80 p-1">Purpose</span>
           <span className="rounded-lg bg-white/80 p-1">Keys</span>
           <span className="rounded-lg bg-white/80 p-1">Links</span>
@@ -762,7 +821,7 @@ function CheatSheet({ navigate }: { navigate: Navigate }) {
         <p className="mt-2 text-slate-700">
           🏁 Start with <strong>purpose</strong> → then say the <strong>key fields</strong> 🔑 → both sides of the <strong>relationship</strong> 🔗 → <strong>cardinality</strong> 📐 → why the FK or bridge entity is placed there 📌
         </p>
-        <div className="mt-3 grid grid-cols-5 gap-1 text-center text-[11px] font-bold text-slate-500">
+        <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-1 text-center text-[11px] font-bold text-slate-500">
           <span className="rounded-lg bg-white/80 p-1">Purpose 🎯</span>
           <span className="rounded-lg bg-white/80 p-1">Keys 🔑</span>
           <span className="rounded-lg bg-white/80 p-1">Both sides 🔗</span>

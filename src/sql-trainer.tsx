@@ -449,7 +449,7 @@ export function SqlBasicsFlashcards({
 
       <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Study order</p>
-        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+        <div className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {sqlBasicsStudySequence.map((step, stepIndex) => (
             <div key={step} className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
               <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Step {stepIndex + 1}</p>

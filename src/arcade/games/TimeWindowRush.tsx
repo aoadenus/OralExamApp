@@ -174,7 +174,7 @@ export function TimeWindowRushGame({ navigate, progress }: { navigate: Navigate;
             <p className="mt-2 font-['Orbitron'] text-lg font-bold text-white">{currentPrompt.text}</p>
           </div>
 
-          <div className="grid gap-2 grid-cols-3 sm:grid-cols-5">
+          <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
             {lanes.map((lane) => {
               const isSelected = selectedLane === lane.id;
               const isCorrect = lane.id === currentPrompt.correctLaneId;
