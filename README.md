@@ -49,7 +49,7 @@ The app content is project-specific, not generic database content. Seed data is 
 - `src/data/subtypes.json`
 - `src/data/erd-hotspots.json`
 
-The current release uses `Stratos_BusinessRules.docx` plus the text-extractable `Mama_s_Little_Bakery_Management_System_ERD.pdf` as the source of truth for keys and relationships. The actual visual ERD used in the app is `public/erd/group8-erd.png`, rendered from the Group 8 ERD PDF. Relationship drill content intentionally stops at rule 46, so rules 47 and 48 are excluded from the business-rule drill set.
+The current release uses the updated oral exam prep bank plus the text-extractable `Mama_s_Little_Bakery_Management_System_ERD.pdf` as the source of truth for keys and relationships. The actual visual ERD used in the app is `public/erd/group8-erd.png`, rendered from the Group 8 ERD PDF. Relationship drill content now includes 48 business-rule records, including the AllergyInfo and CustomerAllergyInfo rules.
 
 ## Deploy
 

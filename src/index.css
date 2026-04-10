@@ -258,6 +258,28 @@ select:focus-visible {
   background-clip: text;
 }
 
+.sql-code-view .sql-kw {
+  color: #f472b6;
+  font-weight: 600;
+}
+
+.sql-code-view .sql-fn {
+  color: #a78bfa;
+}
+
+.sql-code-view .sql-str {
+  color: #2dd4bf;
+}
+
+.sql-code-view .sql-num {
+  color: #60a5fa;
+}
+
+.sql-code-view .sql-cm {
+  color: #94a3b8;
+  font-style: italic;
+}
+
 /* Floating emoji decorations */
 .emoji-float {
   animation: float 3.5s ease-in-out infinite;

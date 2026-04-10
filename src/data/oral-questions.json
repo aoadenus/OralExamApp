@@ -2,496 +2,1554 @@
   {
     "id": "q-entity-customer",
     "type": "entity",
-    "prompt": "Describe the Customer entity, its purpose, and its key attributes.",
+    "prompt": "Describe the CUSTOMER entity.",
     "entityId": "customer",
-    "expectedChecklist": ["explains customer purpose", "mentions customer_id", "mentions name and contact attributes"],
+    "expectedChecklist": [
+      "tracks customer individuals",
+      "customer_id",
+      "first_name last_name",
+      "email",
+      "phone"
+    ],
     "domainId": "customer-sales",
     "difficulty": "easy"
   },
   {
     "id": "q-entity-order",
     "type": "entity",
-    "prompt": "Describe the Order entity and explain why it has customer_id and store_location_id.",
+    "prompt": "What is the purpose of the ORDER entity?",
     "entityId": "order",
-    "expectedChecklist": ["explains order purpose", "mentions order_id", "mentions customer_id", "mentions store_location_id", "mentions order date, status, or total amount"],
+    "expectedChecklist": [
+      "records sales purchases",
+      "order_id",
+      "order_date",
+      "status",
+      "total_amount"
+    ],
     "domainId": "customer-sales",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-address",
     "type": "entity",
-    "prompt": "Describe the Address entity and its relationship to Customer and Zipcode.",
+    "prompt": "Explain the ADDRESS entity.",
     "entityId": "address",
-    "expectedChecklist": ["mentions address_id", "mentions customer_id", "mentions zipcode_id", "mentions line1, line2, city, or state"],
+    "expectedChecklist": [
+      "stores location address data",
+      "address_id",
+      "customer_id",
+      "zipcode_id",
+      "line1 line2 city state"
+    ],
     "domainId": "customer-sales",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-zipcode",
     "type": "entity",
-    "prompt": "Describe the Zipcode entity and why it exists separately from Address.",
+    "prompt": "What does the ZIPCODE entity store?",
     "entityId": "zipcode",
-    "expectedChecklist": ["mentions zipcode_id", "mentions code", "mentions city and state", "explains normalization or shared lookup value"],
+    "expectedChecklist": [
+      "stores location metadata",
+      "zipcode_id",
+      "code",
+      "city",
+      "state"
+    ],
     "domainId": "customer-sales",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-loyaltyprogram",
     "type": "entity",
-    "prompt": "Describe the LoyaltyProgram entity and its customer link.",
+    "prompt": "Describe the LOYALTYPROGRAM entity.",
     "entityId": "loyaltyprogram",
-    "expectedChecklist": ["mentions loyalty_program_id", "mentions customer_id", "mentions enrolled_date", "mentions points_balance or tier"],
+    "expectedChecklist": [
+      "tracks reward enrollment",
+      "loyalty_program_id loyalty_id",
+      "points_balance points",
+      "tier",
+      "customer_id"
+    ],
     "domainId": "customer-sales",
     "difficulty": "easy"
   },
   {
     "id": "q-entity-payment",
     "type": "entity",
-    "prompt": "Describe Payment and explain the foreign keys it carries.",
+    "prompt": "Explain the PAYMENT entity.",
     "entityId": "payment",
-    "expectedChecklist": ["mentions payment_id", "mentions order_id", "mentions payment_method_id", "mentions amount and payment status"],
+    "expectedChecklist": [
+      "records financial transactions",
+      "payment_id",
+      "amount",
+      "payment_date",
+      "order_id payment_method_id"
+    ],
     "domainId": "customer-sales",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-paymentmethod",
     "type": "entity",
-    "prompt": "Describe PaymentMethod and how GiftCard relates to it.",
+    "prompt": "What is the PAYMENTMETHOD entity?",
     "entityId": "paymentmethod",
-    "expectedChecklist": ["mentions payment_method_id", "mentions method_name", "explains reusable method records", "mentions GiftCard subtype"],
+    "expectedChecklist": [
+      "categorizes payment method",
+      "payment_method_id",
+      "method_name",
+      "cash credit gift card",
+      "description"
+    ],
     "domainId": "customer-sales",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-giftcard",
     "type": "entity",
-    "prompt": "Describe GiftCard as a subtype of PaymentMethod.",
+    "prompt": "Describe the GIFTCARD entity.",
     "entityId": "giftcard",
-    "expectedChecklist": ["mentions payment_method_id as PK and FK", "mentions card_number", "mentions balance", "mentions expiry_date", "explains subtype relationship"],
+    "expectedChecklist": [
+      "specialized subtype",
+      "payment_method_id PK FK",
+      "card_number",
+      "balance",
+      "expiry_date"
+    ],
     "domainId": "customer-sales",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-storelocation",
     "type": "entity",
-    "prompt": "Describe StoreLocation and name several parts of the ERD that reference it.",
+    "prompt": "What information is in the STORELOCATION entity?",
     "entityId": "storelocation",
-    "expectedChecklist": ["mentions store_location_id", "mentions location_name", "mentions orders or inventory", "mentions shifts, expenses, budgets, catering, waste, or sales reports"],
+    "expectedChecklist": [
+      "bakery branches",
+      "store_location_id store_id",
+      "location_name",
+      "phone",
+      "address_text"
+    ],
     "domainId": "customer-sales",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-salesreport",
     "type": "entity",
-    "prompt": "Describe SalesReport and its relationship to StoreLocation.",
+    "prompt": "Explain the SALESREPORT entity.",
     "entityId": "salesreport",
-    "expectedChecklist": ["mentions sales_report_id", "mentions store_location_id", "mentions report_date", "mentions total_sales or total_orders"],
+    "expectedChecklist": [
+      "summarizes branch performance",
+      "sales_report_id",
+      "store_location_id",
+      "total_sales",
+      "total_orders report_date"
+    ],
     "domainId": "customer-sales",
     "difficulty": "easy"
   },
   {
     "id": "q-entity-product",
     "type": "entity",
-    "prompt": "Describe Product and name the main ERD areas that depend on it.",
+    "prompt": "Describe the PRODUCT entity.",
     "entityId": "product",
-    "expectedChecklist": ["mentions product_id", "mentions product_category_id", "mentions name and price", "mentions recipes, order lines, reviews, promotions, nutrition, or seasonal items"],
+    "expectedChecklist": [
+      "bakery items",
+      "product_id",
+      "price",
+      "description",
+      "product_category_id"
+    ],
     "domainId": "product-marketing",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-productcategory",
     "type": "entity",
-    "prompt": "Describe ProductCategory and explain why product_category_id belongs in Product.",
+    "prompt": "What is the PRODUCTCATEGORY entity?",
     "entityId": "productcategory",
-    "expectedChecklist": ["mentions product_category_id", "mentions category_name", "explains one category can contain many products", "places FK on Product"],
+    "expectedChecklist": [
+      "groups products",
+      "product_category_id category_id",
+      "category_name",
+      "bread cakes categories",
+      "description"
+    ],
     "domainId": "product-marketing",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-seasonalitem",
     "type": "entity",
-    "prompt": "Describe SeasonalItem as a subtype of Product.",
+    "prompt": "Explain the SEASONALITEM entity.",
     "entityId": "seasonalitem",
-    "expectedChecklist": ["mentions product_id as PK and FK", "mentions season_name", "mentions start_date and end_date", "explains not every product is seasonal"],
+    "expectedChecklist": [
+      "subtype of Product",
+      "product_id PK FK",
+      "season_name",
+      "start_date",
+      "end_date"
+    ],
     "domainId": "product-marketing",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-promotion",
     "type": "entity",
-    "prompt": "Describe Promotion and explain how it relates to Product and Discount.",
+    "prompt": "Describe the PROMOTION entity.",
     "entityId": "promotion",
-    "expectedChecklist": ["mentions promotion_id", "mentions promotion_name", "mentions date range", "mentions ProductPromotion or Discount"],
+    "expectedChecklist": [
+      "marketing campaigns",
+      "promotion_id",
+      "promotion_name",
+      "start_date end_date",
+      "description"
+    ],
     "domainId": "product-marketing",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-discount",
     "type": "entity",
-    "prompt": "Describe Discount and its promotion foreign key.",
+    "prompt": "What does the DISCOUNT entity track?",
     "entityId": "discount",
-    "expectedChecklist": ["mentions discount_id", "mentions promotion_id", "mentions discount_type", "mentions discount_value"],
+    "expectedChecklist": [
+      "specific price cuts",
+      "discount_id",
+      "promotion_id",
+      "discount_type",
+      "discount_value"
+    ],
     "domainId": "product-marketing",
     "difficulty": "easy"
   },
   {
     "id": "q-entity-review",
     "type": "entity",
-    "prompt": "Describe Review and explain the two foreign keys in it.",
+    "prompt": "Explain the REVIEW entity.",
     "entityId": "review",
-    "expectedChecklist": ["mentions review_id", "mentions customer_id", "mentions product_id", "mentions review_date or comment_text"],
+    "expectedChecklist": [
+      "customer feedback",
+      "review_id",
+      "customer_id",
+      "product_id",
+      "comment_text review_date"
+    ],
     "domainId": "product-marketing",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-rating",
     "type": "entity",
-    "prompt": "Describe Rating as a lookup-style entity.",
+    "prompt": "Describe the RATING entity.",
     "entityId": "rating",
-    "expectedChecklist": ["mentions rating_id", "mentions score", "mentions description", "explains rating scale purpose"],
+    "expectedChecklist": [
+      "stand-alone lookup scoring",
+      "rating_id",
+      "score",
+      "description",
+      "1 5 rating scale"
+    ],
     "domainId": "product-marketing",
     "difficulty": "easy"
   },
   {
     "id": "q-entity-ingredient",
     "type": "entity",
-    "prompt": "Describe Ingredient and name the modules that reference it.",
+    "prompt": "What is the INGREDIENT entity?",
     "entityId": "ingredient",
-    "expectedChecklist": ["mentions ingredient_id", "mentions ingredient_name", "mentions unit_of_measure", "mentions inventory, recipe, suppliers, waste, or allergy info"],
+    "expectedChecklist": [
+      "raw materials",
+      "ingredient_id",
+      "ingredient_name",
+      "unit_of_measure",
+      "inventory recipe supplier waste allergy"
+    ],
     "domainId": "inventory-supply",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-inventory",
     "type": "entity",
-    "prompt": "Describe Inventory and explain why it references both Ingredient and StoreLocation.",
+    "prompt": "Explain the INVENTORY entity.",
     "entityId": "inventory",
-    "expectedChecklist": ["mentions inventory_id", "mentions ingredient_id", "mentions store_location_id", "mentions quantity_on_hand and reorder_level"],
+    "expectedChecklist": [
+      "tracks stock levels",
+      "inventory_id",
+      "ingredient_id",
+      "store_location_id",
+      "quantity_on_hand reorder_level"
+    ],
     "domainId": "inventory-supply",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-supplier",
     "type": "entity",
-    "prompt": "Describe Supplier and how it connects to ingredients and invoices.",
+    "prompt": "Describe the SUPPLIER entity.",
     "entityId": "supplier",
-    "expectedChecklist": ["mentions supplier_id", "mentions supplier_name", "mentions contact fields", "mentions SupplierIngredient or Invoice"],
+    "expectedChecklist": [
+      "vendors providing ingredients",
+      "supplier_id",
+      "supplier_name",
+      "contact_email",
+      "phone"
+    ],
     "domainId": "inventory-supply",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-invoice",
     "type": "entity",
-    "prompt": "Describe Invoice and its supplier relationship.",
+    "prompt": "What is the INVOICE entity?",
     "entityId": "invoice",
-    "expectedChecklist": ["mentions invoice_id", "mentions supplier_id", "mentions invoice_date", "mentions amount or status"],
+    "expectedChecklist": [
+      "supplier billing records",
+      "invoice_id",
+      "supplier_id",
+      "amount",
+      "invoice_date status"
+    ],
     "domainId": "inventory-supply",
     "difficulty": "easy"
   },
   {
     "id": "q-entity-department",
     "type": "entity",
-    "prompt": "Describe Department and name the entities that depend on it.",
+    "prompt": "Explain the DEPARTMENT entity.",
     "entityId": "department",
-    "expectedChecklist": ["mentions department_id", "mentions department_name", "mentions employees", "mentions expenses or budgets"],
+    "expectedChecklist": [
+      "internal organization",
+      "department_id",
+      "department_name",
+      "sales kitchen departments",
+      "description"
+    ],
     "domainId": "employee-operations",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-expense",
     "type": "entity",
-    "prompt": "Describe Expense and explain the department and store location foreign keys.",
+    "prompt": "Describe the EXPENSE entity.",
     "entityId": "expense",
-    "expectedChecklist": ["mentions expense_id", "mentions department_id", "mentions store_location_id", "mentions expense_date, amount, or description"],
+    "expectedChecklist": [
+      "operating costs",
+      "expense_id",
+      "department_id",
+      "store_location_id",
+      "description amount expense_date"
+    ],
     "domainId": "inventory-supply",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-budget",
     "type": "entity",
-    "prompt": "Describe Budget and its department and store scope.",
+    "prompt": "What does the BUDGET entity track?",
     "entityId": "budget",
-    "expectedChecklist": ["mentions budget_id", "mentions department_id", "mentions store_location_id", "mentions fiscal_year and amount"],
+    "expectedChecklist": [
+      "financial allocations",
+      "budget_id",
+      "department_id",
+      "store_location_id",
+      "fiscal_year amount"
+    ],
     "domainId": "inventory-supply",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-role",
     "type": "entity",
-    "prompt": "Describe Role and how Employee and Training reference it.",
+    "prompt": "Explain the ROLE entity.",
     "entityId": "role",
-    "expectedChecklist": ["mentions role_id", "mentions role_name", "mentions employees", "mentions training"],
+    "expectedChecklist": [
+      "job titles",
+      "role_id",
+      "role_name",
+      "baker cashier",
+      "description"
+    ],
     "domainId": "employee-operations",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-employee",
     "type": "entity",
-    "prompt": "Describe Employee and explain its role and department foreign keys.",
+    "prompt": "Describe the EMPLOYEE entity.",
     "entityId": "employee",
-    "expectedChecklist": ["mentions employee_id", "mentions role_id", "mentions department_id", "mentions name or email"],
+    "expectedChecklist": [
+      "staff records",
+      "employee_id",
+      "role_id",
+      "department_id",
+      "first_name last_name email"
+    ],
     "domainId": "employee-operations",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-shift",
     "type": "entity",
-    "prompt": "Describe Shift and how it connects Employee, StoreLocation, and OrderAssignment.",
+    "prompt": "What is the SHIFT entity?",
     "entityId": "shift",
-    "expectedChecklist": ["mentions shift_id", "mentions employee_id", "mentions store_location_id", "mentions start_time and end_time", "mentions OrderAssignment"],
+    "expectedChecklist": [
+      "scheduled work periods",
+      "shift_id",
+      "employee_id",
+      "store_location_id",
+      "start_time end_time"
+    ],
     "domainId": "employee-operations",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-training",
     "type": "entity",
-    "prompt": "Describe Training and its employee and role foreign keys.",
+    "prompt": "Explain the TRAINING entity.",
     "entityId": "training",
-    "expectedChecklist": ["mentions training_id", "mentions employee_id", "mentions role_id", "mentions training_name, training_date, or status"],
+    "expectedChecklist": [
+      "employee skill development",
+      "training_id",
+      "employee_id",
+      "role_id",
+      "training_name training_date status"
+    ],
     "domainId": "employee-operations",
-    "difficulty": "medium"
-  },
-  {
-    "id": "q-entity-eventtype",
-    "type": "entity",
-    "prompt": "Describe EventType and how it classifies events.",
-    "entityId": "eventtype",
-    "expectedChecklist": ["mentions event_type_id", "mentions type_name", "mentions description", "explains one event type can classify many events"],
-    "domainId": "catering-delivery",
     "difficulty": "easy"
   },
   {
     "id": "q-entity-event",
     "type": "entity",
-    "prompt": "Describe Event and explain the event_type_id and customer_id foreign keys.",
+    "prompt": "Describe the EVENT entity.",
     "entityId": "event",
-    "expectedChecklist": ["mentions event_id", "mentions event_type_id", "mentions customer_id", "mentions event_date or event_name"],
+    "expectedChecklist": [
+      "occasions weddings birthdays",
+      "event_id",
+      "event_type_id",
+      "customer_id",
+      "event_date event_name"
+    ],
     "domainId": "catering-delivery",
-    "difficulty": "medium"
+    "difficulty": "easy"
+  },
+  {
+    "id": "q-entity-eventtype",
+    "type": "entity",
+    "prompt": "What is the EVENTTYPE entity?",
+    "entityId": "eventtype",
+    "expectedChecklist": [
+      "classifies events",
+      "event_type_id",
+      "type_name",
+      "description",
+      "weddings birthdays"
+    ],
+    "domainId": "catering-delivery",
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-catering",
     "type": "entity",
-    "prompt": "Describe Catering and the three foreign keys it carries.",
+    "prompt": "Explain the CATERING entity.",
     "entityId": "catering",
-    "expectedChecklist": ["mentions catering_id", "mentions event_id", "mentions store_location_id", "mentions customer_id", "mentions guest_count or status"],
+    "expectedChecklist": [
+      "large-scale bakery orders",
+      "catering_id",
+      "event_id",
+      "store_location_id customer_id",
+      "guest_count status"
+    ],
     "domainId": "catering-delivery",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-delivery",
     "type": "entity",
-    "prompt": "Describe Delivery and explain its order, employee, and address links.",
+    "prompt": "Describe the DELIVERY entity.",
     "entityId": "delivery",
-    "expectedChecklist": ["mentions delivery_id", "mentions order_id", "mentions employee_id", "mentions address_id", "mentions delivery_date or status"],
+    "expectedChecklist": [
+      "tracks fulfillment",
+      "delivery_id",
+      "order_id",
+      "employee_id address_id",
+      "delivery_date status"
+    ],
     "domainId": "catering-delivery",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-nutritionalinfo",
     "type": "entity",
-    "prompt": "Describe NutritionalInfo and its one-to-one relationship with Product.",
+    "prompt": "What is the NUTRITIONALINFO entity?",
     "entityId": "nutritionalinfo",
-    "expectedChecklist": ["mentions nutritional_info_id", "mentions product_id", "mentions calories", "mentions protein, carbs, or fat grams"],
+    "expectedChecklist": [
+      "health data",
+      "nutritional_info_id",
+      "product_id",
+      "calories",
+      "protein carbs fat"
+    ],
     "domainId": "compliance-regulatory",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-allergyinfo",
     "type": "entity",
-    "prompt": "Describe AllergyInfo and why it references Ingredient.",
+    "prompt": "Explain the ALLERGYINFO entity.",
     "entityId": "allergyinfo",
-    "expectedChecklist": ["mentions allergy_info_id", "mentions ingredient_id", "mentions allergy_name", "mentions description"],
+    "expectedChecklist": [
+      "allergen tracking",
+      "allergy_info_id",
+      "ingredient_id",
+      "allergy_name",
+      "description"
+    ],
     "domainId": "compliance-regulatory",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-orderline",
     "type": "entity",
-    "prompt": "Describe OrderLine and the many-to-many relationship it resolves.",
+    "prompt": "Describe the ORDERLINE entity.",
     "entityId": "orderline",
-    "expectedChecklist": ["mentions associative entity", "mentions Order and Product", "mentions composite PK", "mentions quantity and unit_price"],
+    "expectedChecklist": [
+      "associative entity",
+      "order_id product_id composite PK",
+      "Order Product",
+      "quantity",
+      "unit_price"
+    ],
     "domainId": "customer-sales",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-productpromotion",
     "type": "entity",
-    "prompt": "Describe ProductPromotion and the many-to-many relationship it resolves.",
+    "prompt": "What is the PRODUCTPROMOTION entity?",
     "entityId": "productpromotion",
-    "expectedChecklist": ["mentions associative entity", "mentions Product and Promotion", "mentions composite PK", "mentions featured_flag or display_order"],
+    "expectedChecklist": [
+      "bridge M:N Product Promotion",
+      "product_id promotion_id composite PK",
+      "associative entity",
+      "featured_flag",
+      "display_order"
+    ],
     "domainId": "product-marketing",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-supplieringredient",
     "type": "entity",
-    "prompt": "Describe SupplierIngredient and the many-to-many relationship it resolves.",
+    "prompt": "Explain the SUPPLIERINGREDIENT entity.",
     "entityId": "supplieringredient",
-    "expectedChecklist": ["mentions associative entity", "mentions Supplier and Ingredient", "mentions composite PK", "mentions unit_cost or lead_time_days"],
+    "expectedChecklist": [
+      "bridge M:N Supplier Ingredient",
+      "supplier_id ingredient_id composite PK",
+      "associative entity",
+      "unit_cost",
+      "lead_time_days"
+    ],
     "domainId": "inventory-supply",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-recipe",
     "type": "entity",
-    "prompt": "Describe Recipe and explain why it is modeled as an associative entity.",
+    "prompt": "Describe the RECIPE entity.",
     "entityId": "recipe",
-    "expectedChecklist": ["mentions associative entity", "mentions Product and Ingredient", "mentions composite PK", "mentions quantity_required and unit"],
+    "expectedChecklist": [
+      "bridge M:N Product Ingredient",
+      "product_id ingredient_id composite PK",
+      "associative entity",
+      "quantity_required",
+      "unit"
+    ],
     "domainId": "inventory-supply",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-orderassignment",
     "type": "entity",
-    "prompt": "Describe OrderAssignment and explain its three-part composite key.",
+    "prompt": "What is the ORDERASSIGNMENT entity?",
     "entityId": "orderassignment",
-    "expectedChecklist": ["mentions associative entity", "mentions Order, Employee, and Shift", "mentions composite PK", "mentions assigned_at or role_on_order"],
+    "expectedChecklist": [
+      "bridge M:N Order Employee Shift",
+      "order_id employee_id shift_id composite PK",
+      "associative entity",
+      "assigned_at",
+      "role_on_order"
+    ],
     "domainId": "employee-operations",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-customerallergyinfo",
     "type": "entity",
-    "prompt": "Describe CustomerAllergyInfo and why severity and notes belong there.",
+    "prompt": "Explain the CUSTOMERALLERGYINFO entity.",
     "entityId": "customerallergyinfo",
-    "expectedChecklist": ["mentions associative entity", "mentions Customer and AllergyInfo", "mentions composite PK", "mentions severity and notes"],
+    "expectedChecklist": [
+      "bridge M:N Customer AllergyInfo",
+      "customer_id allergy_info_id composite PK",
+      "associative entity",
+      "severity",
+      "notes"
+    ],
     "domainId": "compliance-regulatory",
-    "difficulty": "hard"
+    "difficulty": "easy"
   },
   {
     "id": "q-entity-wastelog",
     "type": "entity",
-    "prompt": "Describe WasteLog and explain the ingredient and store location foreign keys.",
+    "prompt": "What is the purpose of the WASTELOG entity?",
     "entityId": "wastelog",
-    "expectedChecklist": ["mentions waste_log_id", "mentions ingredient_id", "mentions store_location_id", "mentions quantity_wasted or reason"],
+    "expectedChecklist": [
+      "records ingredients thrown away",
+      "waste_log_id",
+      "ingredient_id",
+      "store_location_id",
+      "quantity_wasted reason"
+    ],
     "domainId": "inventory-supply",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
-    "id": "q-rel-customer-order",
+    "id": "q-hard-customer-order",
     "type": "relationship",
-    "prompt": "Explain the business rules between Customer and Order, including FK placement.",
+    "prompt": "Explain the rules between Customer and Order.",
     "relationshipId": "rule-01",
-    "expectedChecklist": ["states both sides", "says 1:M", "places customer_id in Order", "explains Order is the many side"],
-    "domainId": "customer-sales",
-    "difficulty": "medium"
-  },
-  {
-    "id": "q-rel-order-product",
-    "type": "relationship",
-    "prompt": "Explain how Order and Product are related and how OrderLine resolves it.",
-    "relationshipId": "rule-05",
-    "expectedChecklist": ["states both sides", "says M:N", "names OrderLine", "mentions order_id and product_id"],
+    "expectedChecklist": [
+      "Customer",
+      "Order",
+      "1:M",
+      "customer_id",
+      "Order many side"
+    ],
     "domainId": "customer-sales",
     "difficulty": "hard"
   },
   {
-    "id": "q-rel-product-ingredient",
+    "id": "q-hard-addresses",
     "type": "relationship",
-    "prompt": "Explain how Product and Ingredient are related through Recipe.",
-    "relationshipId": "rule-22",
-    "expectedChecklist": ["states both sides", "says M:N", "names Recipe", "mentions quantity_required or unit"],
+    "prompt": "What are the rules for Addresses?",
+    "relationshipId": "rule-02",
+    "expectedChecklist": [
+      "Customer",
+      "Address",
+      "1:M",
+      "customer_id",
+      "Address many side"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-address-zipcode",
+    "type": "relationship",
+    "prompt": "Explain the relationship between Address and Zipcode.",
+    "relationshipId": "rule-03",
+    "expectedChecklist": [
+      "Address",
+      "Zipcode",
+      "1:M",
+      "zipcode_id",
+      "Address references one zipcode"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-loyalty-enrollment",
+    "type": "relationship",
+    "prompt": "How does Loyalty Program enrollment work?",
+    "relationshipId": "rule-04",
+    "expectedChecklist": [
+      "Customer",
+      "LoyaltyProgram",
+      "optional 1:1",
+      "customer_id",
+      "LoyaltyProgram table"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-order-lines",
+    "type": "relationship",
+    "prompt": "What are the rules for Order Lines?",
+    "relationshipId": "rule-06",
+    "expectedChecklist": [
+      "Order",
+      "OrderLine",
+      "1:M",
+      "order_id",
+      "composite PK order_id product_id"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-order-payment",
+    "type": "relationship",
+    "prompt": "Explain the rules between Order and Payment.",
+    "relationshipId": "rule-08",
+    "expectedChecklist": [
+      "Order",
+      "Payment",
+      "1:M",
+      "order_id",
+      "Payment many side"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-payment-methods",
+    "type": "relationship",
+    "prompt": "Where is the FK for Payment Methods?",
+    "relationshipId": "rule-09",
+    "expectedChecklist": [
+      "PaymentMethod",
+      "Payment",
+      "1:M",
+      "payment_method_id",
+      "Payment table"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-gift-card-subtype",
+    "type": "relationship",
+    "prompt": "Describe the subtype link for Gift Cards.",
+    "relationshipId": "rule-10",
+    "expectedChecklist": [
+      "GiftCard",
+      "PaymentMethod",
+      "1:1 subtype",
+      "payment_method_id",
+      "PK and FK"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-store-order",
+    "type": "relationship",
+    "prompt": "Explain the rules between Store Location and Order.",
+    "relationshipId": "rule-11",
+    "expectedChecklist": [
+      "StoreLocation",
+      "Order",
+      "1:M",
+      "store_location_id",
+      "Order table"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-sales-reports",
+    "type": "relationship",
+    "prompt": "Where is the FK for Sales Reports?",
+    "relationshipId": "rule-12",
+    "expectedChecklist": [
+      "StoreLocation",
+      "SalesReport",
+      "1:M",
+      "store_location_id",
+      "SalesReport table"
+    ],
+    "domainId": "customer-sales",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-product-categories",
+    "type": "relationship",
+    "prompt": "What are the rules for Product Categories?",
+    "relationshipId": "rule-13",
+    "expectedChecklist": [
+      "ProductCategory",
+      "Product",
+      "1:M",
+      "product_category_id",
+      "Product many side"
+    ],
+    "domainId": "product-marketing",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-seasonal-items",
+    "type": "relationship",
+    "prompt": "Explain the subtype link for Seasonal Items.",
+    "relationshipId": "rule-14",
+    "expectedChecklist": [
+      "SeasonalItem",
+      "Product",
+      "1:1 subtype",
+      "product_id",
+      "PK and FK"
+    ],
+    "domainId": "product-marketing",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-products-promotions",
+    "type": "relationship",
+    "prompt": "How are Products and Promotions linked?",
+    "relationshipId": "rule-15",
+    "expectedChecklist": [
+      "Product",
+      "Promotion",
+      "M:N",
+      "ProductPromotion",
+      "product_id promotion_id"
+    ],
+    "domainId": "product-marketing",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-discounts",
+    "type": "relationship",
+    "prompt": "Where is the FK for Discounts?",
+    "relationshipId": "rule-16",
+    "expectedChecklist": [
+      "Promotion",
+      "Discount",
+      "1:M",
+      "promotion_id",
+      "Discount table"
+    ],
+    "domainId": "product-marketing",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-customer-review",
+    "type": "relationship",
+    "prompt": "Explain the rules between Customer and Review.",
+    "relationshipId": "rule-17",
+    "expectedChecklist": [
+      "Customer",
+      "Review",
+      "1:M",
+      "customer_id",
+      "Review table"
+    ],
+    "domainId": "product-marketing",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-product-review",
+    "type": "relationship",
+    "prompt": "Explain the rules between Product and Review.",
+    "relationshipId": "rule-18",
+    "expectedChecklist": [
+      "Product",
+      "Review",
+      "1:M",
+      "product_id",
+      "Review table"
+    ],
+    "domainId": "product-marketing",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-ingredient-inventory",
+    "type": "relationship",
+    "prompt": "How are Ingredient stock levels tracked?",
+    "relationshipId": "rule-19",
+    "expectedChecklist": [
+      "Ingredient",
+      "Inventory",
+      "1:M",
+      "ingredient_id",
+      "Inventory table"
+    ],
     "domainId": "inventory-supply",
     "difficulty": "hard"
   },
   {
-    "id": "q-rel-supplier-ingredient",
+    "id": "q-hard-store-inventory",
     "type": "relationship",
-    "prompt": "Explain how Supplier and Ingredient are related through SupplierIngredient.",
+    "prompt": "Explain the link between Store Location and Inventory.",
+    "relationshipId": "rule-20",
+    "expectedChecklist": [
+      "StoreLocation",
+      "Inventory",
+      "1:M",
+      "store_location_id",
+      "Inventory table"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-supplier-ingredient",
+    "type": "relationship",
+    "prompt": "How are Suppliers and Ingredients linked?",
     "relationshipId": "rule-21",
-    "expectedChecklist": ["states both sides", "says M:N", "names SupplierIngredient", "mentions unit_cost or lead_time_days"],
+    "expectedChecklist": [
+      "Supplier",
+      "Ingredient",
+      "M:N",
+      "SupplierIngredient",
+      "supplier_id ingredient_id"
+    ],
     "domainId": "inventory-supply",
     "difficulty": "hard"
   },
   {
-    "id": "q-rel-order-employee",
+    "id": "q-hard-product-ingredient-recipe",
     "type": "relationship",
-    "prompt": "Explain how Order and Employee are related through OrderAssignment.",
-    "relationshipId": "rule-34",
-    "expectedChecklist": ["states both sides", "says M:N", "names OrderAssignment", "mentions Shift participation"],
+    "prompt": "How are Products and Ingredients linked for a Recipe?",
+    "relationshipId": "rule-22",
+    "expectedChecklist": [
+      "Product",
+      "Ingredient",
+      "M:N",
+      "Recipe",
+      "product_id ingredient_id"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-supplier-invoice",
+    "type": "relationship",
+    "prompt": "Explain the link between Supplier and Invoice.",
+    "relationshipId": "rule-23",
+    "expectedChecklist": [
+      "Supplier",
+      "Invoice",
+      "1:M",
+      "supplier_id",
+      "Invoice table"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-department-expenses",
+    "type": "relationship",
+    "prompt": "Where is the FK for Departmental Expenses?",
+    "relationshipId": "rule-24",
+    "expectedChecklist": [
+      "Department",
+      "Expense",
+      "1:M",
+      "department_id",
+      "Expense table"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-store-expense",
+    "type": "relationship",
+    "prompt": "Explain the link between Store Location and Expense.",
+    "relationshipId": "rule-25",
+    "expectedChecklist": [
+      "StoreLocation",
+      "Expense",
+      "1:M",
+      "store_location_id",
+      "Expense table"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-ingredient-wastelog",
+    "type": "relationship",
+    "prompt": "Where is the FK for Waste Logs regarding ingredients?",
+    "relationshipId": "rule-26",
+    "expectedChecklist": [
+      "Ingredient",
+      "WasteLog",
+      "1:M",
+      "ingredient_id",
+      "WasteLog table"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-store-wastelog",
+    "type": "relationship",
+    "prompt": "Explain the link between Store Location and Waste Log.",
+    "relationshipId": "rule-27",
+    "expectedChecklist": [
+      "StoreLocation",
+      "WasteLog",
+      "1:M",
+      "store_location_id",
+      "WasteLog table"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-department-budgets",
+    "type": "relationship",
+    "prompt": "Where is the FK for Departmental Budgets?",
+    "relationshipId": "rule-28",
+    "expectedChecklist": [
+      "Department",
+      "Budget",
+      "1:M",
+      "department_id",
+      "Budget table"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-store-budget",
+    "type": "relationship",
+    "prompt": "Explain the link between Store Location and Budget.",
+    "relationshipId": "rule-29",
+    "expectedChecklist": [
+      "StoreLocation",
+      "Budget",
+      "1:M",
+      "store_location_id",
+      "Budget table"
+    ],
+    "domainId": "inventory-supply",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-employee-roles",
+    "type": "relationship",
+    "prompt": "How are Employees assigned to Roles?",
+    "relationshipId": "rule-30",
+    "expectedChecklist": [
+      "Role",
+      "Employee",
+      "1:M",
+      "role_id",
+      "Employee table"
+    ],
     "domainId": "employee-operations",
     "difficulty": "hard"
   },
   {
-    "id": "q-rel-product-category",
+    "id": "q-hard-department-employees",
     "type": "relationship",
-    "prompt": "Explain ProductCategory to Product, including cardinality and FK placement.",
-    "relationshipId": "rule-13",
-    "expectedChecklist": ["states both sides", "says 1:M", "places product_category_id in Product", "explains Product is the many side"],
-    "domainId": "product-marketing",
-    "difficulty": "medium"
+    "prompt": "Where is the FK for Departmental Employees?",
+    "relationshipId": "rule-31",
+    "expectedChecklist": [
+      "Department",
+      "Employee",
+      "1:M",
+      "department_id",
+      "Employee table"
+    ],
+    "domainId": "employee-operations",
+    "difficulty": "hard"
   },
   {
-    "id": "q-rel-product-review",
+    "id": "q-hard-employee-shift",
     "type": "relationship",
-    "prompt": "Explain Product to Review, including cardinality and FK placement.",
-    "relationshipId": "rule-18",
-    "expectedChecklist": ["states both sides", "says 1:M", "places product_id in Review", "explains each review belongs to one product"],
-    "domainId": "product-marketing",
-    "difficulty": "medium"
+    "prompt": "Explain the link between Employee and Shift.",
+    "relationshipId": "rule-32",
+    "expectedChecklist": [
+      "Employee",
+      "Shift",
+      "1:M",
+      "employee_id",
+      "Shift table"
+    ],
+    "domainId": "employee-operations",
+    "difficulty": "hard"
   },
   {
-    "id": "q-rel-event-catering",
+    "id": "q-hard-branch-shifts",
     "type": "relationship",
-    "prompt": "Explain Event to Catering, including cardinality and FK placement.",
+    "prompt": "Where is the FK for Branch Shifts?",
+    "relationshipId": "rule-33",
+    "expectedChecklist": [
+      "StoreLocation",
+      "Shift",
+      "1:M",
+      "store_location_id",
+      "Shift table"
+    ],
+    "domainId": "employee-operations",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-order-employee-assignment",
+    "type": "relationship",
+    "prompt": "How are Employees assigned to Orders?",
+    "relationshipId": "rule-34",
+    "expectedChecklist": [
+      "Order",
+      "Employee",
+      "M:N",
+      "OrderAssignment",
+      "order_id employee_id shift_id"
+    ],
+    "domainId": "employee-operations",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-employee-training",
+    "type": "relationship",
+    "prompt": "Where is the FK for Training records regarding employees?",
+    "relationshipId": "rule-36",
+    "expectedChecklist": [
+      "Employee",
+      "Training",
+      "1:M",
+      "employee_id",
+      "Training table"
+    ],
+    "domainId": "employee-operations",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-role-training",
+    "type": "relationship",
+    "prompt": "Explain the link between Role and Training.",
+    "relationshipId": "rule-37",
+    "expectedChecklist": [
+      "Role",
+      "Training",
+      "1:M",
+      "role_id",
+      "Training table"
+    ],
+    "domainId": "employee-operations",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-event-types",
+    "type": "relationship",
+    "prompt": "Where is the FK for Event Types?",
+    "relationshipId": "rule-38",
+    "expectedChecklist": [
+      "EventType",
+      "Event",
+      "1:M",
+      "event_type_id",
+      "Event table"
+    ],
+    "domainId": "catering-delivery",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-customer-event",
+    "type": "relationship",
+    "prompt": "Explain the rules between Customer and Event.",
+    "relationshipId": "rule-39",
+    "expectedChecklist": [
+      "Customer",
+      "Event",
+      "1:M",
+      "customer_id",
+      "Event table"
+    ],
+    "domainId": "catering-delivery",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-event-catering",
+    "type": "relationship",
+    "prompt": "How are Events and Catering Orders linked?",
     "relationshipId": "rule-40",
-    "expectedChecklist": ["states both sides", "says 1:M", "places event_id in Catering", "explains catering order belongs to one event"],
+    "expectedChecklist": [
+      "Event",
+      "Catering",
+      "1:M",
+      "event_id",
+      "Catering table"
+    ],
     "domainId": "catering-delivery",
-    "difficulty": "medium"
+    "difficulty": "hard"
   },
   {
-    "id": "q-rel-delivery-order",
+    "id": "q-hard-store-catering",
     "type": "relationship",
-    "prompt": "Explain Delivery to Order, including why order_id is in Delivery.",
+    "prompt": "Explain the link between Store Location and Catering.",
+    "relationshipId": "rule-41",
+    "expectedChecklist": [
+      "StoreLocation",
+      "Catering",
+      "1:M",
+      "store_location_id",
+      "Catering table"
+    ],
+    "domainId": "catering-delivery",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-customer-catering",
+    "type": "relationship",
+    "prompt": "Explain the rules between Customer and Catering.",
+    "relationshipId": "rule-42",
+    "expectedChecklist": [
+      "Customer",
+      "Catering",
+      "1:M",
+      "customer_id",
+      "Catering table"
+    ],
+    "domainId": "catering-delivery",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-delivery-orders",
+    "type": "relationship",
+    "prompt": "Where is the FK for Deliveries regarding orders?",
     "relationshipId": "rule-43",
-    "expectedChecklist": ["states both sides", "says 1:1", "places order_id in Delivery", "explains delivery is optional for an order"],
+    "expectedChecklist": [
+      "Order",
+      "Delivery",
+      "1:1",
+      "order_id",
+      "Delivery table"
+    ],
     "domainId": "catering-delivery",
     "difficulty": "hard"
   },
   {
-    "id": "q-rel-product-nutrition",
+    "id": "q-hard-employee-delivery",
     "type": "relationship",
-    "prompt": "Explain Product to NutritionalInfo, including cardinality and FK placement.",
+    "prompt": "Explain the link between Employee and Delivery.",
+    "relationshipId": "rule-44",
+    "expectedChecklist": [
+      "Employee",
+      "Delivery",
+      "1:M",
+      "employee_id",
+      "Delivery table"
+    ],
+    "domainId": "catering-delivery",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-delivery-addresses",
+    "type": "relationship",
+    "prompt": "Where is the FK for Delivery addresses?",
+    "relationshipId": "rule-45",
+    "expectedChecklist": [
+      "Address",
+      "Delivery",
+      "1:M",
+      "address_id",
+      "Delivery table"
+    ],
+    "domainId": "catering-delivery",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-nutritional-info",
+    "type": "relationship",
+    "prompt": "Explain the rules for Nutritional Info.",
     "relationshipId": "rule-46",
-    "expectedChecklist": ["states both sides", "says 1:1", "places product_id in NutritionalInfo", "explains each nutrition record belongs to one product"],
-    "domainId": "compliance-regulatory",
-    "difficulty": "medium"
-  },
-  {
-    "id": "q-bridge-productpromotion",
-    "type": "entity",
-    "prompt": "Which associative entity resolves Product to Promotion, and what extra attributes does it store?",
-    "entityId": "productpromotion",
-    "expectedChecklist": ["answers ProductPromotion", "mentions product_id", "mentions promotion_id", "mentions featured_flag and display_order"],
-    "domainId": "product-marketing",
-    "difficulty": "hard"
-  },
-  {
-    "id": "q-bridge-customerallergyinfo",
-    "type": "entity",
-    "prompt": "Which bridge connects Customer and AllergyInfo, and what attributes belong there?",
-    "entityId": "customerallergyinfo",
-    "expectedChecklist": ["answers CustomerAllergyInfo", "mentions customer_id", "mentions allergy_info_id", "mentions severity and notes"],
+    "expectedChecklist": [
+      "Product",
+      "NutritionalInfo",
+      "1:1",
+      "product_id",
+      "NutritionalInfo table"
+    ],
     "domainId": "compliance-regulatory",
     "difficulty": "hard"
   },
   {
-    "id": "q-subtype-seasonalitem",
-    "type": "entity",
-    "prompt": "Explain the subtype relationship between SeasonalItem and Product.",
-    "entityId": "seasonalitem",
-    "expectedChecklist": ["states SeasonalItem is subtype", "mentions Product supertype", "mentions product_id PK/FK", "explains optional subtype"],
-    "domainId": "product-marketing",
+    "id": "q-hard-ingredient-allergyinfo",
+    "type": "relationship",
+    "prompt": "How are Ingredients and Allergy Info linked?",
+    "relationshipId": "rule-47",
+    "expectedChecklist": [
+      "Ingredient",
+      "AllergyInfo",
+      "1:M",
+      "ingredient_id",
+      "AllergyInfo table"
+    ],
+    "domainId": "compliance-regulatory",
     "difficulty": "hard"
   },
   {
-    "id": "q-subtype-giftcard",
-    "type": "entity",
-    "prompt": "Explain the subtype relationship between GiftCard and PaymentMethod.",
-    "entityId": "giftcard",
-    "expectedChecklist": ["states GiftCard is subtype", "mentions PaymentMethod supertype", "mentions payment_method_id PK/FK", "explains gift-card-specific attributes"],
-    "domainId": "customer-sales",
+    "id": "q-hard-customer-allergyinfo",
+    "type": "relationship",
+    "prompt": "How are Customers and Allergy Info linked?",
+    "relationshipId": "rule-48",
+    "expectedChecklist": [
+      "Customer",
+      "AllergyInfo",
+      "M:N",
+      "CustomerAllergyInfo",
+      "customer_id allergy_info_id"
+    ],
+    "domainId": "compliance-regulatory",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-fk-many-side",
+    "type": "relationship",
+    "prompt": "Why is the FK in the many side table?",
+    "entityIds": [],
+    "modelAnswer": "The FK belongs on the many-side table because each row on the many side must point back to exactly one parent row on the one side.",
+    "expectedChecklist": [
+      "foreign key",
+      "many side",
+      "points to one parent",
+      "one side parent"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-store-shifts-bidirectional",
+    "type": "relationship",
+    "prompt": "Explain the bi-directional rule for Store Locations and Shifts.",
+    "relationshipId": "rule-33",
+    "expectedChecklist": [
+      "StoreLocation schedules many shifts",
+      "Shift takes place at one location",
+      "1:M",
+      "store_location_id",
+      "Shift table"
+    ],
+    "domainId": "employee-operations",
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-hard-review-rating",
+    "type": "relationship",
+    "prompt": "What are the rules between Review and Rating?",
+    "entityIds": [
+      "review",
+      "rating"
+    ],
+    "modelAnswer": "Each review has exactly one rating category, and each rating category can be referenced by many reviews.",
+    "expectedChecklist": [
+      "Review",
+      "Rating",
+      "exactly one rating category",
+      "rating category many reviews"
+    ],
+    "difficulty": "hard",
+    "domainId": "product-marketing"
+  },
+  {
+    "id": "q-logic-associative-entities",
+    "type": "relationship",
+    "prompt": "Identify all six associative entities.",
+    "entityIds": [
+      "orderline",
+      "productpromotion",
+      "supplieringredient",
+      "recipe",
+      "orderassignment",
+      "customerallergyinfo"
+    ],
+    "modelAnswer": "The six associative entities are OrderLine, ProductPromotion, SupplierIngredient, Recipe, OrderAssignment, and CustomerAllergyInfo.",
+    "expectedChecklist": [
+      "OrderLine",
+      "ProductPromotion",
+      "SupplierIngredient",
+      "Recipe",
+      "OrderAssignment",
+      "CustomerAllergyInfo"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-logic-composite-primary-key",
+    "type": "relationship",
+    "prompt": "What is a composite primary key?",
+    "entityIds": [
+      "orderline",
+      "recipe",
+      "orderassignment"
+    ],
+    "modelAnswer": "A composite primary key is a primary key made from multiple columns. Bridge tables use it to make each combination of related foreign keys unique.",
+    "expectedChecklist": [
+      "primary key multiple columns",
+      "bridge tables",
+      "unique combination",
+      "foreign keys"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-logic-orderassignment-pk",
+    "type": "relationship",
+    "prompt": "Explain the composite PK of ORDERASSIGNMENT.",
+    "entityIds": [
+      "orderassignment",
+      "order",
+      "employee",
+      "shift"
+    ],
+    "modelAnswer": "OrderAssignment uses order_id, employee_id, and shift_id together so the design can track which staff member worked which shift on a specific order.",
+    "expectedChecklist": [
+      "order_id",
+      "employee_id",
+      "shift_id",
+      "staff worked shift",
+      "specific order"
+    ],
+    "difficulty": "hard",
+    "domainId": "employee-operations"
+  },
+  {
+    "id": "q-logic-recipe-pk",
+    "type": "relationship",
+    "prompt": "Explain the composite PK of RECIPE.",
+    "entityIds": [
+      "recipe",
+      "product",
+      "ingredient"
+    ],
+    "modelAnswer": "Recipe uses product_id and ingredient_id together to uniquely identify the link between one product and one ingredient used in that product.",
+    "expectedChecklist": [
+      "product_id",
+      "ingredient_id",
+      "unique link",
+      "Product",
+      "Ingredient"
+    ],
+    "difficulty": "hard",
+    "domainId": "inventory-supply"
+  },
+  {
+    "id": "q-logic-subtype-seasonalitem",
+    "type": "relationship",
+    "prompt": "How do you model a subtype relationship like SEASONALITEM?",
+    "entityIds": [
+      "seasonalitem",
+      "product"
+    ],
+    "modelAnswer": "Use the parent entity primary key in the subtype table. For SeasonalItem, product_id is both the primary key and the foreign key back to Product.",
+    "expectedChecklist": [
+      "parent primary key",
+      "subtype table",
+      "product_id",
+      "PK and FK",
+      "Product"
+    ],
+    "difficulty": "hard",
+    "domainId": "product-marketing"
+  },
+  {
+    "id": "q-logic-third-normal-form",
+    "type": "relationship",
+    "prompt": "What does 3rd Normal Form (3NF) mean for your design?",
+    "entityIds": [],
+    "modelAnswer": "3NF means there are no partial or transitive dependencies, and every non-key attribute depends only on the primary key.",
+    "expectedChecklist": [
+      "3NF",
+      "no partial dependencies",
+      "no transitive dependencies",
+      "non-key attributes",
+      "primary key"
+    ],
+    "difficulty": "hard"
+  },
+  {
+    "id": "q-logic-customer-loyalty-analysis",
+    "type": "relationship",
+    "prompt": "How does your ERD support Customer Loyalty Analysis?",
+    "entityIds": [
+      "customer",
+      "order",
+      "loyaltyprogram"
+    ],
+    "modelAnswer": "Customer loyalty analysis is supported by Customer linked to Order for purchase history and Customer linked to LoyaltyProgram for points, enrollment, and tier.",
+    "expectedChecklist": [
+      "Customer",
+      "Order",
+      "LoyaltyProgram",
+      "purchase history",
+      "points tier enrollment"
+    ],
+    "difficulty": "hard",
+    "domainId": "customer-sales"
+  },
+  {
+    "id": "q-logic-top-employee-performance",
+    "type": "relationship",
+    "prompt": "Which entities support Top Employee Performance?",
+    "entityIds": [
+      "employee",
+      "order",
+      "orderassignment"
+    ],
+    "modelAnswer": "Top employee performance is supported by Employee, Order, and the OrderAssignment bridge that connects staff to the orders and shifts they worked.",
+    "expectedChecklist": [
+      "Employee",
+      "Order",
+      "OrderAssignment",
+      "bridge",
+      "worked orders shifts"
+    ],
+    "difficulty": "hard",
+    "domainId": "employee-operations"
+  },
+  {
+    "id": "q-logic-waste-by-branch",
+    "type": "relationship",
+    "prompt": "How do you track waste for a specific branch?",
+    "entityIds": [
+      "wastelog",
+      "storelocation",
+      "ingredient"
+    ],
+    "modelAnswer": "Use WasteLog and its store_location_id foreign key to StoreLocation. The WasteLog row also references the ingredient that was wasted.",
+    "expectedChecklist": [
+      "WasteLog",
+      "store_location_id",
+      "StoreLocation",
+      "branch",
+      "Ingredient"
+    ],
+    "difficulty": "hard",
+    "domainId": "inventory-supply"
+  },
+  {
+    "id": "q-logic-loyalty-participation",
+    "type": "relationship",
+    "prompt": "Is participation mandatory for a Customer to join the Loyalty Program?",
+    "entityIds": [
+      "customer",
+      "loyaltyprogram"
+    ],
+    "modelAnswer": "No. Loyalty participation is optional for the customer, but every LoyaltyProgram record must belong to one customer.",
+    "expectedChecklist": [
+      "No",
+      "optional for customer",
+      "LoyaltyProgram record",
+      "must have one customer"
+    ],
+    "difficulty": "hard",
+    "domainId": "customer-sales"
+  },
+  {
+    "id": "q-logic-bridge-tables",
+    "type": "relationship",
+    "prompt": "Why are bridge tables used for many-to-many relationships?",
+    "entityIds": [
+      "orderline",
+      "productpromotion",
+      "supplieringredient",
+      "recipe",
+      "orderassignment",
+      "customerallergyinfo"
+    ],
+    "modelAnswer": "Bridge tables are used because a relational database cannot directly implement an M:N relationship. The bridge converts it into two 1:M relationships and can store attributes about the link.",
+    "expectedChecklist": [
+      "many-to-many",
+      "cannot implement directly",
+      "bridge table",
+      "two 1:M relationships",
+      "stores link attributes"
+    ],
     "difficulty": "hard"
   }
 ]

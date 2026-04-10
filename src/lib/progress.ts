@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { domains, entities, relationships } from './content';
 import type { ItemProgress, MasteryResult, MockOralHistoryItem, ProgressState, SettingsState, WeakSpot, StudySession, ErrorCategory } from '../types';
 
-const STORAGE_KEY = 'bakery-erd-oral-trainer-progress-v1';
+const STORAGE_KEY = 'restaurant-sql-oral-trainer-progress-v2';
 
 const defaultSettings: SettingsState = {
   soundEnabled: false,

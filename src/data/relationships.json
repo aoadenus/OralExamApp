@@ -780,5 +780,39 @@
     "associativeEntityId": null,
     "domainId": "compliance-regulatory",
     "oralCue": "product_id belongs in NutritionalInfo because each nutritional record describes one product."
+  },
+  {
+    "id": "rule-47",
+    "entityA": "ingredient",
+    "entityB": "allergyinfo",
+    "type": "one-to-many",
+    "cardinality": "1:M",
+    "optionalityA": "optional",
+    "optionalityB": "mandatory",
+    "ruleForward": "An ingredient can be associated with many allergy info records.",
+    "ruleReverse": "Each allergy info record must reference exactly one ingredient.",
+    "fkTable": "allergyinfo",
+    "fkField": "ingredient_id",
+    "requiresAssociativeEntity": false,
+    "associativeEntityId": null,
+    "domainId": "compliance-regulatory",
+    "oralCue": "ingredient_id belongs in AllergyInfo because each allergy record describes one ingredient while an ingredient can have multiple allergy records."
+  },
+  {
+    "id": "rule-48",
+    "entityA": "customer",
+    "entityB": "allergyinfo",
+    "type": "many-to-many",
+    "cardinality": "M:N",
+    "optionalityA": "optional",
+    "optionalityB": "optional",
+    "ruleForward": "A customer can have many allergy info records through the CustomerAllergyInfo associative entity.",
+    "ruleReverse": "An allergy info record can apply to many customers through the CustomerAllergyInfo associative entity.",
+    "fkTable": "customerallergyinfo",
+    "fkField": "customer_id, allergy_info_id",
+    "requiresAssociativeEntity": true,
+    "associativeEntityId": "customerallergyinfo",
+    "domainId": "compliance-regulatory",
+    "oralCue": "CustomerAllergyInfo resolves the M:N relationship and stores the customer_id and allergy_info_id combination plus severity and notes."
   }
 ]

@@ -1,0 +1,1305 @@
+[
+  {
+    "id": "sql-01",
+    "title": "Customer Loyalty Analysis",
+    "desc": "Find customers who made >5 purchases but are NOT enrolled in the loyalty program.",
+    "category": "Subquery & Filtering",
+    "difficulty": "medium",
+    "sql": "SELECT\n    c.CustomerID,\n    c.FirstName || ' ' || c.LastName AS customer_name,\n    c.Email,\n    c.Phone,\n    COUNT(o.OrderID) AS total_purchases\nFROM Customer c\nJOIN \"Order\" o ON o.CustomerID = c.CustomerID\nWHERE c.CustomerID NOT IN (\n    SELECT CustomerID FROM LoyaltyProgram\n)\nAND o.Status IN ('Completed','Delivered')\nGROUP BY c.CustomerID, c.FirstName, c.LastName, c.Email, c.Phone\nHAVING COUNT(o.OrderID) > 5\nORDER BY total_purchases DESC;",
+    "tables": [
+      "Customer",
+      "Order",
+      "LoyaltyProgram"
+    ],
+    "concepts": [
+      "NOT IN subquery",
+      "HAVING vs WHERE",
+      "GROUP BY",
+      "String concatenation"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What does NOT IN (subquery) do?",
+        "text": "In this bakery context, nOT IN checks that c.CustomerID does not appear in the result set returned by the subquery. The subquery SELECT CustomerID FROM LoyaltyProgram returns all enrolled customers. So NOT IN filters down to only customers who have never enrolled."
+      },
+      {
+        "type": "concept",
+        "title": "Why is HAVING used instead of WHERE?",
+        "text": "In this bakery context, wHERE filters individual rows before grouping. HAVING filters after aggregation. Since we need to count orders first and then keep only groups with count > 5, we must use HAVING COUNT(o.OrderID) > 5. Writing this condition in WHERE would cause a syntax error because aggregate functions cannot appear in WHERE."
+      },
+      {
+        "type": "tip",
+        "title": "Why GROUP BY lists every non-aggregated column",
+        "text": "In this bakery context, sQL requires that every column in SELECT that is not inside an aggregate function (COUNT, SUM, etc.) must appear in GROUP BY. That is why c.FirstName, c.LastName, c.Email, and c.Phone are all listed."
+      },
+      {
+        "type": "warn",
+        "title": "What does the WHERE clause on Status do?",
+        "text": "In this bakery context, the condition o.Status IN ('Completed','Delivered') ensures we only count orders that were actually fulfilled. Cancelled or pending orders are excluded so the purchase count is accurate."
+      }
+    ],
+    "checklist": [
+      "NOT IN with subquery to exclude loyalty members",
+      "JOIN Order on CustomerID",
+      "WHERE Status filters completed/delivered orders",
+      "GROUP BY all non-aggregated columns",
+      "HAVING COUNT > 5 filters after aggregation",
+      "ORDER BY total_purchases DESC"
+    ],
+    "businessMeaning": "The bakery wants to know which repeat buyers have not joined loyalty so staff can target signups.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Customer Loyalty Analysis.",
+      "One row per customer not enrolled in loyalty, with purchase count."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Customer Loyalty Analysis tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "HAVING",
+        "why": "Filters grouped results after aggregate calculations are done."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      }
+    ]
+  },
+  {
+    "id": "sql-02",
+    "title": "Inventory Shortage Alert",
+    "desc": "Identify ingredients that are below the minimum stock level.",
+    "category": "Comparison & Arithmetic",
+    "difficulty": "easy",
+    "sql": "SELECT\n    i.IngredientName,\n    inv.CurrentStock AS current_stock,\n    inv.ReorderThreshold AS minimum_stock,\n    i.UnitOfMeasure AS unit,\n    ROUND((inv.ReorderThreshold - inv.CurrentStock)::numeric, 2) AS shortage\nFROM Inventory inv\nJOIN Ingredient i ON i.IngredientID = inv.IngredientID\nWHERE inv.CurrentStock < inv.ReorderThreshold\nORDER BY shortage DESC;",
+    "tables": [
+      "Inventory",
+      "Ingredient"
+    ],
+    "concepts": [
+      "Column comparison in WHERE",
+      "Type casting ::numeric",
+      "ROUND()",
+      "Computed columns"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What does the WHERE clause do here?",
+        "text": "In this bakery context, wHERE inv.CurrentStock < inv.ReorderThreshold compares two columns in the same row. It keeps only rows where the current stock has fallen below the reorder threshold — these are the ingredients that need restocking."
+      },
+      {
+        "type": "concept",
+        "title": "What does ::numeric mean?",
+        "text": "In this bakery context, the ::numeric is a PostgreSQL type cast. It explicitly converts the value to type numeric so ROUND() can format it to 2 decimal places. Without the cast, ROUND may throw an error on non-numeric types."
+      },
+      {
+        "type": "tip",
+        "title": "Column aliasing with AS",
+        "text": "In this bakery context, aS current_stock, AS minimum_stock, and AS shortage rename the output columns to human-readable labels. The alias shortage is a computed column created from an arithmetic expression, not a stored column in any table."
+      },
+      {
+        "type": "warn",
+        "title": "Why ORDER BY shortage DESC?",
+        "text": "In this bakery context, sorting by shortage DESC puts the most critically low ingredients at the top. This makes the report actionable — the bakery operations team sees the most urgent bakery items first."
+      }
+    ],
+    "checklist": [
+      "JOIN Ingredient on IngredientID",
+      "WHERE CurrentStock < ReorderThreshold compares two columns",
+      "ROUND with ::numeric type cast",
+      "Computed shortage column (threshold minus current)",
+      "ORDER BY shortage DESC for priority view"
+    ],
+    "businessMeaning": "The bakery wants to know which ingredients are below reorder level before production is interrupted.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Inventory Shortage Alert.",
+      "One row per ingredient below threshold, ordered by largest shortage first."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Inventory Shortage Alert tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      }
+    ]
+  },
+  {
+    "id": "sql-03",
+    "title": "Top Employee Performance",
+    "desc": "Find the employee who processed the most orders last month.",
+    "category": "Date Functions & LIMIT",
+    "difficulty": "medium",
+    "sql": "SELECT\n    e.EmployeeID,\n    e.FirstName || ' ' || e.LastName AS employee_name,\n    r.RoleName,\n    COUNT(oa.OrderID) AS order_count\nFROM OrderAssignment oa\nJOIN Employee e ON e.EmployeeID = oa.EmployeeID\nJOIN Role r ON r.RoleID = e.RoleID\nJOIN \"Order\" o ON o.OrderID = oa.OrderID\nWHERE o.OrderDate >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')\n  AND o.OrderDate <  DATE_TRUNC('month', CURRENT_DATE)\nGROUP BY e.EmployeeID, e.FirstName, e.LastName, r.RoleName\nORDER BY order_count DESC\nLIMIT 5;",
+    "tables": [
+      "OrderAssignment",
+      "Employee",
+      "Role",
+      "Order"
+    ],
+    "concepts": [
+      "DATE_TRUNC",
+      "INTERVAL",
+      "Multiple JOINs",
+      "LIMIT"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "How does DATE_TRUNC work to get 'last month'?",
+        "text": "In this bakery context, dATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') returns the first day of the previous month at midnight. Combined with < DATE_TRUNC('month', CURRENT_DATE) (first day of current month), this creates a precise range covering exactly last month — regardless of how many days it has."
+      },
+      {
+        "type": "concept",
+        "title": "Why are there multiple JOINs?",
+        "text": "In this bakery context, data is spread across normalized tables. OrderAssignment links orders to employees, Employee holds names, Role holds job titles, and Order holds dates. JOINs reconnect these related tables so we can filter by date while displaying employee names and roles."
+      },
+      {
+        "type": "tip",
+        "title": "What does LIMIT 5 do?",
+        "text": "In this bakery context, lIMIT 5 restricts the output to the top 5 rows after sorting. Combined with ORDER BY order_count DESC, it returns only the top 5 performers. Without ORDER BY, LIMIT would return an arbitrary 5 rows."
+      },
+      {
+        "type": "warn",
+        "title": "Why \"Order\" is in double quotes",
+        "text": "In this bakery context, oRDER is a reserved keyword in SQL (used in ORDER BY). The table was named \"Order\" with double quotes to escape the reserved word. Every reference must use \"Order\" with quotes, or queries will fail."
+      }
+    ],
+    "checklist": [
+      "Chain of 4 JOINs: OrderAssignment → Employee → Role → Order",
+      "DATE_TRUNC('month', ...) for clean month boundaries",
+      "Half-open date range: >= start AND < end",
+      "INTERVAL '1 month' subtracted from CURRENT_DATE",
+      "GROUP BY employee and role",
+      "ORDER BY order_count DESC LIMIT 5 for top-N pattern",
+      "\"Order\" in double quotes (reserved keyword)"
+    ],
+    "businessMeaning": "The bakery wants to know which team members handled the most orders last month for performance review.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Top Employee Performance.",
+      "One row per employee for last month, ranked by handled orders."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Top Employee Performance tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      },
+      {
+        "clause": "LIMIT",
+        "why": "Restricts output to a top-N view for quick oral explanation."
+      }
+    ]
+  },
+  {
+    "id": "sql-04",
+    "title": "Supplier Expense Report",
+    "desc": "Calculate total expenses for each supplier in the last quarter.",
+    "category": "Aggregation & Grouping",
+    "difficulty": "medium",
+    "sql": "SELECT\n    s.SupplierName,\n    s.ContactName,\n    COUNT(inv.InvoiceID) AS invoice_count,\n    SUM(inv.TotalAmount) AS total_expense\nFROM Invoice inv\nJOIN Supplier s ON s.SupplierID = inv.SupplierID\nWHERE inv.InvoiceDate >= DATE_TRUNC('quarter', CURRENT_DATE)\n  AND inv.InvoiceDate <  DATE_TRUNC('quarter', CURRENT_DATE) + INTERVAL '3 months'\nGROUP BY s.SupplierID, s.SupplierName, s.ContactName\nORDER BY total_expense DESC;",
+    "tables": [
+      "Invoice",
+      "Supplier"
+    ],
+    "concepts": [
+      "DATE_TRUNC quarter",
+      "COUNT vs SUM",
+      "GROUP BY primary key",
+      "INTERVAL arithmetic"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What is the effect of GROUP BY here?",
+        "text": "In this bakery context, gROUP BY s.SupplierID, s.SupplierName, s.ContactName collapses all invoice rows for the same supplier into a single output row. COUNT and SUM compute totals within each group. Without GROUP BY, we would get one grand total for all suppliers combined."
+      },
+      {
+        "type": "concept",
+        "title": "How does DATE_TRUNC('quarter', ...) work?",
+        "text": "In this bakery context, dATE_TRUNC('quarter', CURRENT_DATE) returns the first day of the current quarter (Jan 1, Apr 1, Jul 1, or Oct 1). Adding INTERVAL '3 months' gives the start of the next quarter. Together they form an inclusive-start / exclusive-end range that captures exactly one quarter."
+      },
+      {
+        "type": "tip",
+        "title": "COUNT vs SUM",
+        "text": "In this bakery context, cOUNT(inv.InvoiceID) counts how many invoice records exist per supplier. SUM(inv.TotalAmount) adds up the dollar values. They answer different questions: 'how many invoices?' vs. 'how much money total?'"
+      },
+      {
+        "type": "warn",
+        "title": "Why include SupplierID in GROUP BY?",
+        "text": "In this bakery context, two suppliers could theoretically share the same name. Grouping by s.SupplierID (the primary key) guarantees each group represents exactly one supplier."
+      }
+    ],
+    "checklist": [
+      "JOIN Supplier on SupplierID",
+      "DATE_TRUNC('quarter', CURRENT_DATE) for quarter start",
+      "INTERVAL '3 months' to get quarter end",
+      "COUNT(InvoiceID) = number of invoices",
+      "SUM(TotalAmount) = total money spent",
+      "GROUP BY SupplierID (PK) guarantees uniqueness",
+      "ORDER BY total_expense DESC"
+    ],
+    "businessMeaning": "The bakery wants to know supplier spend by quarter to control purchasing costs.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Supplier Expense Report.",
+      "One row per supplier with invoice count and total spend for the quarter."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Supplier Expense Report tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      }
+    ]
+  },
+  {
+    "id": "sql-05",
+    "title": "Product Review Insights",
+    "desc": "Identify the top 3 highest-rated and top 3 lowest-rated products.",
+    "category": "UNION ALL & Subqueries",
+    "difficulty": "hard",
+    "sql": "(\n  SELECT\n      p.ProductName,\n      ROUND(AVG(rt.Score)::numeric, 2) AS avg_rating,\n      COUNT(rv.ReviewID) AS review_count,\n      'Top Rated' AS category\n  FROM Review rv\n  JOIN Product p ON p.ProductID = rv.ProductID\n  JOIN Rating rt ON rt.RatingID = rv.RatingID\n  GROUP BY p.ProductID, p.ProductName\n  HAVING COUNT(rv.ReviewID) >= 2\n  ORDER BY avg_rating DESC, review_count DESC\n  LIMIT 3\n)\nUNION ALL\n(\n  SELECT\n      p.ProductName,\n      ROUND(AVG(rt.Score)::numeric, 2) AS avg_rating,\n      COUNT(rv.ReviewID) AS review_count,\n      'Lowest Rated' AS category\n  FROM Review rv\n  JOIN Product p ON p.ProductID = rv.ProductID\n  JOIN Rating rt ON rt.RatingID = rv.RatingID\n  GROUP BY p.ProductID, p.ProductName\n  HAVING COUNT(rv.ReviewID) >= 2\n  ORDER BY avg_rating ASC, review_count DESC\n  LIMIT 3\n);",
+    "tables": [
+      "Review",
+      "Product",
+      "Rating"
+    ],
+    "concepts": [
+      "UNION ALL",
+      "HAVING with COUNT",
+      "Literal column values",
+      "Parenthesized subqueries"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What does UNION ALL do?",
+        "text": "In this bakery context, uNION ALL stacks the results of two SELECT statements vertically. The first finds the top 3 highest-rated; the second finds the top 3 lowest-rated. UNION ALL keeps all rows. Using plain UNION instead would remove duplicates, which is unnecessary here and slower."
+      },
+      {
+        "type": "concept",
+        "title": "Why is HAVING COUNT >= 2 used?",
+        "text": "In this bakery context, hAVING COUNT(rv.ReviewID) >= 2 filters out bakery products with only one review. A single review is not statistically meaningful. This ensures the averages are based on at least some consensus."
+      },
+      {
+        "type": "tip",
+        "title": "Literal column: 'Top Rated' AS category",
+        "text": "In this bakery context, writing 'Top Rated' AS category creates a constant text column in every row. This labels each row so after UNION ALL, you can tell which half of the result a row came from."
+      },
+      {
+        "type": "warn",
+        "title": "Why parentheses around each SELECT?",
+        "text": "In this bakery context, in PostgreSQL, when using ORDER BY and LIMIT inside a UNION ALL, each subquery must be wrapped in parentheses. Without them, the database cannot determine which query the ORDER BY belongs to."
+      }
+    ],
+    "checklist": [
+      "Two SELECTs joined with UNION ALL (not UNION)",
+      "Each SELECT wrapped in parentheses for ORDER BY + LIMIT to work",
+      "HAVING COUNT >= 2 to require minimum review sample",
+      "AVG(Score) with ROUND and ::numeric cast",
+      "Literal 'Top Rated' / 'Lowest Rated' column to label rows",
+      "First query: ORDER BY avg_rating DESC LIMIT 3",
+      "Second query: ORDER BY avg_rating ASC LIMIT 3"
+    ],
+    "businessMeaning": "The bakery wants to know top and lowest rated bakery products to improve menu decisions.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Product Review Insights.",
+      "Up to six rows: top 3 and lowest 3 products by average rating."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Product Review Insights tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "HAVING",
+        "why": "Filters grouped results after aggregate calculations are done."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      },
+      {
+        "clause": "LIMIT",
+        "why": "Restricts output to a top-N view for quick oral explanation."
+      }
+    ]
+  },
+  {
+    "id": "sql-06",
+    "title": "Promotion Effectiveness",
+    "desc": "Compare sales before and during promotion campaigns.",
+    "category": "CTEs & LEFT JOIN",
+    "difficulty": "hard",
+    "sql": "WITH promo_products AS (\n    SELECT\n        pp.ProductID,\n        p.ProductName,\n        pr.PromotionName,\n        pr.StartDate AS promo_start,\n        pr.EndDate AS promo_end,\n        pr.StartDate - INTERVAL '30 days' AS before_start,\n        pr.StartDate - INTERVAL '1 day' AS before_end\n    FROM ProductPromotion pp\n    JOIN Product p ON p.ProductID = pp.ProductID\n    JOIN Promotion pr ON pr.PromotionID = pp.PromotionID\n    WHERE pr.StartDate >= '2026-01-01'\n),\nbefore_sales AS (\n    SELECT pp.ProductID, pp.PromotionName,\n           COALESCE(SUM(ol.Quantity), 0) AS qty_before\n    FROM promo_products pp\n    LEFT JOIN OrderLine ol ON ol.ProductID = pp.ProductID\n    LEFT JOIN \"Order\" o ON o.OrderID = ol.OrderID\n        AND o.OrderDate::date BETWEEN pp.before_start AND pp.before_end\n        AND o.Status IN ('Completed','Delivered')\n    GROUP BY pp.ProductID, pp.PromotionName\n),\nduring_sales AS (\n    SELECT pp.ProductID, pp.PromotionName,\n           COALESCE(SUM(ol.Quantity), 0) AS qty_during\n    FROM promo_products pp\n    LEFT JOIN OrderLine ol ON ol.ProductID = pp.ProductID\n    LEFT JOIN \"Order\" o ON o.OrderID = ol.OrderID\n        AND o.OrderDate::date BETWEEN pp.promo_start AND pp.promo_end\n        AND o.Status IN ('Completed','Delivered')\n    GROUP BY pp.ProductID, pp.PromotionName\n)\nSELECT\n    pp.ProductName,\n    pp.PromotionName,\n    bs.qty_before AS sales_before,\n    ds.qty_during AS sales_during,\n    CASE WHEN bs.qty_before > 0\n         THEN ROUND(((ds.qty_during - bs.qty_before)::numeric / bs.qty_before) * 100, 1)\n         ELSE NULL\n    END AS growth_rate_pct\nFROM promo_products pp\nJOIN before_sales bs ON bs.ProductID = pp.ProductID AND bs.PromotionName = pp.PromotionName\nJOIN during_sales ds ON ds.ProductID = pp.ProductID AND ds.PromotionName = pp.PromotionName\nORDER BY pp.PromotionName, pp.ProductName;",
+    "tables": [
+      "ProductPromotion",
+      "Product",
+      "Promotion",
+      "OrderLine",
+      "Order"
+    ],
+    "concepts": [
+      "CTEs (WITH clause)",
+      "COALESCE",
+      "LEFT JOIN for zero rows",
+      "CASE for safe division",
+      "BETWEEN"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What is a CTE (WITH clause)?",
+        "text": "In this bakery context, a Common Table Expression (WITH ... AS) defines a temporary named result set that can be referenced later in the same query. Here, three CTEs are chained: promo_bakery products identifies what to compare, before_sales counts pre-promo quantities, and during_sales counts promo-period quantities. CTEs make complex queries readable and modular."
+      },
+      {
+        "type": "concept",
+        "title": "Why use COALESCE(SUM(...), 0)?",
+        "text": "In this bakery context, if a bakery product had zero sales in a period, the LEFT JOIN produces no matching rows, and SUM returns NULL. COALESCE(..., 0) converts that to 0, preventing NULLs from breaking the growth rate calculation."
+      },
+      {
+        "type": "tip",
+        "title": "LEFT JOIN vs JOIN here",
+        "text": "In this bakery context, lEFT JOIN is used for the sales subqueries because a bakery product might have zero sales before or during the promo. A regular JOIN would drop those rows entirely, making it look like the bakery product does not exist rather than showing '0 sales.'"
+      },
+      {
+        "type": "warn",
+        "title": "CASE WHEN for safe division",
+        "text": "In this bakery context, the CASE WHEN bs.qty_before > 0 prevents division by zero. If no sales occurred before the promotion, growth rate is mathematically undefined, so we return NULL instead of crashing."
+      }
+    ],
+    "checklist": [
+      "3 CTEs: promo_products, before_sales, during_sales",
+      "INTERVAL arithmetic for 30-day before window",
+      "LEFT JOIN so zero-sales products still appear",
+      "COALESCE(SUM(...), 0) converts NULL to zero",
+      "CASE WHEN > 0 prevents division by zero",
+      "Growth rate = (during - before) / before * 100",
+      "Final SELECT JOINs all 3 CTEs together"
+    ],
+    "businessMeaning": "The bakery wants to know whether promotions increased sales versus the pre-promo baseline.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Promotion Effectiveness.",
+      "One row per product-promotion pair with before vs during quantity and growth percent."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Promotion Effectiveness tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      },
+      {
+        "clause": "WITH (CTE)",
+        "why": "Breaks complex bakery logic into readable named steps."
+      }
+    ]
+  },
+  {
+    "id": "sql-07",
+    "title": "Catering Revenue",
+    "desc": "Summarize total catering revenue by event type.",
+    "category": "Aggregation & Grouping",
+    "difficulty": "easy",
+    "sql": "SELECT\n    et.TypeName AS event_type,\n    COUNT(c.CateringID) AS number_of_orders,\n    SUM(c.TotalCost) AS total_revenue,\n    ROUND(AVG(c.TotalCost)::numeric, 2) AS avg_revenue_per_event\nFROM Catering c\nJOIN Event e ON e.EventID = c.EventID\nJOIN EventType et ON et.EventTypeID = e.EventTypeID\nGROUP BY et.EventTypeID, et.TypeName\nORDER BY total_revenue DESC;",
+    "tables": [
+      "Catering",
+      "Event",
+      "EventType"
+    ],
+    "concepts": [
+      "JOIN chain",
+      "COUNT + SUM + AVG together",
+      "GROUP BY with multiple aggregates"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "How do the JOINs chain together?",
+        "text": "In this bakery context, catering → Event → EventType is a chain following foreign keys. Each catering record links to an event, and each event has a type. The two JOINs 'walk' this chain to reach TypeName so we can group and label by event type."
+      },
+      {
+        "type": "concept",
+        "title": "What is the effect of GROUP BY here?",
+        "text": "In this bakery context, gROUP BY et.EventTypeID, et.TypeName collapses all catering records sharing the same event type into one row per type. COUNT tells how many events, SUM gives total revenue, and AVG gives the average — all within each group."
+      },
+      {
+        "type": "tip",
+        "title": "Multiple aggregates in one query",
+        "text": "In this bakery context, you can use several aggregate functions (COUNT, SUM, AVG) together in the same SELECT. Each one operates independently on the rows within each group defined by GROUP BY."
+      }
+    ],
+    "checklist": [
+      "Chain of 2 JOINs: Catering → Event → EventType",
+      "COUNT(CateringID) counts events per type",
+      "SUM(TotalCost) totals revenue per type",
+      "AVG(TotalCost) with ROUND and ::numeric",
+      "GROUP BY EventTypeID and TypeName",
+      "ORDER BY total_revenue DESC"
+    ],
+    "businessMeaning": "The bakery wants to know which catering event types generate the strongest revenue.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Catering Revenue.",
+      "One row per event type with total and average catering revenue."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Catering Revenue tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      }
+    ]
+  },
+  {
+    "id": "sql-08",
+    "title": "Nutritional & Allergy Compliance",
+    "desc": "List products missing nutritional or allergy information.",
+    "category": "LEFT JOIN & NULL Checks",
+    "difficulty": "hard",
+    "sql": "SELECT\n    p.ProductName,\n    CASE WHEN ni.NutritionalInfoID IS NULL\n         THEN 'Missing nutritional info'\n         ELSE 'Has nutritional info'\n    END AS nutritional_status,\n    COALESCE(\n        STRING_AGG(DISTINCT ai.AllergenName, ', '),\n        'No known allergens'\n    ) AS allergens_from_recipe\nFROM Product p\nLEFT JOIN NutritionalInfo ni ON ni.ProductID = p.ProductID\nLEFT JOIN Recipe r ON r.ProductID = p.ProductID\nLEFT JOIN AllergyInfo ai ON ai.IngredientID = r.IngredientID\nWHERE ni.NutritionalInfoID IS NULL\n   OR ai.AllergyInfoID IS NOT NULL\nGROUP BY p.ProductID, p.ProductName, ni.NutritionalInfoID\nORDER BY\n    CASE WHEN ni.NutritionalInfoID IS NULL THEN 0 ELSE 1 END,\n    p.ProductName;",
+    "tables": [
+      "Product",
+      "NutritionalInfo",
+      "Recipe",
+      "AllergyInfo"
+    ],
+    "concepts": [
+      "LEFT JOIN for missing data",
+      "IS NULL / IS NOT NULL",
+      "STRING_AGG DISTINCT",
+      "CASE in ORDER BY"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "Why use LEFT JOIN instead of JOIN?",
+        "text": "In this bakery context, lEFT JOIN keeps all rows from the left table (Product) even if there is no matching row in the right table. A regular JOIN would exclude bakery products missing nutritional info entirely — the exact bakery products we want to find."
+      },
+      {
+        "type": "concept",
+        "title": "What does IS NULL check?",
+        "text": "In this bakery context, ni.NutritionalInfoID IS NULL identifies bakery products with no matching row in NutritionalInfo. You cannot use = NULL because NULL represents 'unknown,' and any comparison with NULL returns unknown (not true). Always use IS NULL or IS NOT NULL."
+      },
+      {
+        "type": "tip",
+        "title": "STRING_AGG with DISTINCT",
+        "text": "In this bakery context, sTRING_AGG(DISTINCT ai.AllergenName, ', ') concatenates all unique allergen names into a comma-separated string. DISTINCT prevents duplicates if an ingredient appears in multiple recipes."
+      },
+      {
+        "type": "warn",
+        "title": "CASE in ORDER BY",
+        "text": "In this bakery context, cASE WHEN ni.NutritionalInfoID IS NULL THEN 0 ELSE 1 END in ORDER BY sorts bakery products with missing nutritional info first (value 0). This is a computed sort — you are not limited to sorting by column names alone."
+      }
+    ],
+    "checklist": [
+      "LEFT JOIN for NutritionalInfo, Recipe, and AllergyInfo",
+      "IS NULL (not = NULL) to detect missing rows",
+      "CASE WHEN IS NULL THEN ... END for conditional label",
+      "STRING_AGG(DISTINCT ..., ', ') for allergen list",
+      "COALESCE to replace NULL string aggregate with fallback",
+      "WHERE uses OR to include missing-nutrition OR has-allergen",
+      "CASE in ORDER BY to sort missing items first"
+    ],
+    "businessMeaning": "The bakery wants to know which bakery products are missing nutrition or allergy-linked details for compliance.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Nutritional & Allergy Compliance.",
+      "One row per flagged product showing nutrition status and allergen summary."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Nutritional & Allergy Compliance tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      }
+    ]
+  },
+  {
+    "id": "sql-09",
+    "title": "Sales by Product Category",
+    "desc": "Calculate total sales for each product category this quarter.",
+    "category": "Aggregation & Grouping",
+    "difficulty": "medium",
+    "sql": "SELECT\n    pc.CategoryName,\n    COUNT(DISTINCT o.OrderID) AS order_count,\n    SUM(ol.Quantity) AS total_units_sold,\n    SUM(ol.Quantity * ol.UnitPrice) AS total_sales\nFROM OrderLine ol\nJOIN \"Order\" o ON o.OrderID = ol.OrderID\nJOIN Product p ON p.ProductID = ol.ProductID\nJOIN ProductCategory pc ON pc.CategoryID = p.CategoryID\nWHERE o.OrderDate >= DATE_TRUNC('quarter', CURRENT_DATE)\n  AND o.OrderDate <  DATE_TRUNC('quarter', CURRENT_DATE) + INTERVAL '3 months'\n  AND o.Status IN ('Completed','Delivered')\nGROUP BY pc.CategoryID, pc.CategoryName\nORDER BY total_sales DESC;",
+    "tables": [
+      "OrderLine",
+      "Order",
+      "Product",
+      "ProductCategory"
+    ],
+    "concepts": [
+      "COUNT DISTINCT",
+      "Computed SUM expression",
+      "4-table JOIN chain",
+      "Quarter date range"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "Why COUNT(DISTINCT o.OrderID)?",
+        "text": "In this bakery context, one order can contain multiple order lines (e.g., a latte and a cake). Without DISTINCT, COUNT(o.OrderID) would count each line as a separate order, inflating the number. DISTINCT ensures each order is counted only once."
+      },
+      {
+        "type": "concept",
+        "title": "Computed expression in SUM",
+        "text": "In this bakery context, sUM(ol.Quantity * ol.UnitPrice) multiplies quantity by price for each line and sums the results. The multiplication happens row-by-row before the sum. This calculates actual line-bakery item revenue."
+      },
+      {
+        "type": "tip",
+        "title": "Chaining four JOINs",
+        "text": "In this bakery context, orderLine → Order → Product → ProductCategory. Each JOIN follows a foreign key. The chain lets us filter by order date (from Order) while grouping by category name (from ProductCategory)."
+      }
+    ],
+    "checklist": [
+      "4-table JOIN chain: OrderLine → Order → Product → ProductCategory",
+      "COUNT(DISTINCT o.OrderID) avoids double-counting multi-line orders",
+      "SUM(Quantity * UnitPrice) computes line-item revenue",
+      "Quarter range with DATE_TRUNC + INTERVAL '3 months'",
+      "WHERE Status filters completed/delivered only",
+      "GROUP BY CategoryID (PK) and CategoryName"
+    ],
+    "businessMeaning": "The bakery wants to know which product categories drive sales this quarter.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Sales by Product Category.",
+      "One row per product category with orders, units sold, and sales amount."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Sales by Product Category tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      }
+    ]
+  },
+  {
+    "id": "sql-10",
+    "title": "Top Customers",
+    "desc": "Top 5 customers with the highest total spending in the past year.",
+    "category": "Date Functions & LIMIT",
+    "difficulty": "easy",
+    "sql": "SELECT\n    c.CustomerID,\n    c.FirstName || ' ' || c.LastName AS customer_name,\n    c.Email,\n    COUNT(DISTINCT o.OrderID) AS total_orders,\n    SUM(o.TotalAmount) AS total_spending\nFROM Customer c\nJOIN \"Order\" o ON o.CustomerID = c.CustomerID\nWHERE o.OrderDate >= CURRENT_DATE - INTERVAL '1 year'\n  AND o.Status IN ('Completed','Delivered')\nGROUP BY c.CustomerID, c.FirstName, c.LastName, c.Email\nORDER BY total_spending DESC\nLIMIT 5;",
+    "tables": [
+      "Customer",
+      "Order"
+    ],
+    "concepts": [
+      "INTERVAL arithmetic",
+      "String concatenation ||",
+      "Top-N pattern (ORDER BY + LIMIT)",
+      "COUNT DISTINCT"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What does CURRENT_DATE - INTERVAL '1 year' mean?",
+        "text": "In this bakery context, cURRENT_DATE returns today's date. Subtracting INTERVAL '1 year' gives the date exactly one year ago. The WHERE clause uses this to keep only orders placed within the past 12 months."
+      },
+      {
+        "type": "concept",
+        "title": "String concatenation with ||",
+        "text": "In this bakery context, c.FirstName || ' ' || c.LastName concatenates two columns with a space in between. The || operator is PostgreSQL's string concatenation operator. The result is aliased as customer_name."
+      },
+      {
+        "type": "tip",
+        "title": "ORDER BY + LIMIT = 'top N' pattern",
+        "text": "In this bakery context, oRDER BY total_spending DESC LIMIT 5 is the standard SQL pattern for 'top N' queries. Sort all rows by the metric (highest first), then take only the first 5. This is one of the most common patterns in reporting."
+      }
+    ],
+    "checklist": [
+      "JOIN Order on CustomerID",
+      "CURRENT_DATE - INTERVAL '1 year' for rolling 12-month window",
+      "WHERE Status IN ('Completed','Delivered')",
+      "|| operator for string concatenation",
+      "COUNT(DISTINCT OrderID) for unique orders",
+      "ORDER BY total_spending DESC LIMIT 5 (top-N pattern)"
+    ],
+    "businessMeaning": "The bakery wants to know which customers spend the most over the last 12 months.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Top Customers.",
+      "Top 5 customer rows ranked by total spending."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Top Customers tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      },
+      {
+        "clause": "LIMIT",
+        "why": "Restricts output to a top-N view for quick oral explanation."
+      }
+    ]
+  },
+  {
+    "id": "sql-11",
+    "title": "Best-Selling Products",
+    "desc": "Top 5 products by sales volume last month.",
+    "category": "Date Functions & LIMIT",
+    "difficulty": "medium",
+    "sql": "SELECT\n    p.ProductName,\n    pc.CategoryName,\n    SUM(ol.Quantity) AS total_quantity_sold,\n    SUM(ol.Quantity * ol.UnitPrice) AS total_revenue\nFROM OrderLine ol\nJOIN \"Order\" o ON o.OrderID = ol.OrderID\nJOIN Product p ON p.ProductID = ol.ProductID\nJOIN ProductCategory pc ON pc.CategoryID = p.CategoryID\nWHERE o.OrderDate >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')\n  AND o.OrderDate <  DATE_TRUNC('month', CURRENT_DATE)\n  AND o.Status IN ('Completed','Delivered')\nGROUP BY p.ProductID, p.ProductName, pc.CategoryName\nORDER BY total_quantity_sold DESC\nLIMIT 5;",
+    "tables": [
+      "OrderLine",
+      "Order",
+      "Product",
+      "ProductCategory"
+    ],
+    "concepts": [
+      "Half-open date range",
+      "Volume vs revenue distinction",
+      "GROUP BY PK for uniqueness",
+      "Top-N pattern"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "Half-open date range pattern",
+        "text": "In this bakery context, >= start AND < end is a 'half-open' range: it includes the start but excludes the end. For monthly ranges this is ideal because DATE_TRUNC gives exact month boundaries. Every timestamp in February falls within >= Feb 1 and < Mar 1."
+      },
+      {
+        "type": "concept",
+        "title": "Why GROUP BY includes ProductID?",
+        "text": "In this bakery context, two bakery products could theoretically share the same name. Grouping by p.ProductID (the primary key) guarantees uniqueness. The name and category are also required in GROUP BY because they appear in SELECT without aggregation."
+      },
+      {
+        "type": "tip",
+        "title": "Quantity sold vs. revenue",
+        "text": "In this bakery context, sUM(ol.Quantity) = how many units moved (volume). SUM(ol.Quantity * ol.UnitPrice) = how much money generated (revenue). A cheap bakery item can be a best-seller by volume but not by revenue."
+      }
+    ],
+    "checklist": [
+      "DATE_TRUNC('month', ...) for exact last-month range",
+      "Half-open range: >= start AND < end",
+      "SUM(Quantity) for volume, SUM(Quantity * UnitPrice) for revenue",
+      "GROUP BY ProductID (PK) ensures uniqueness",
+      "4-table JOIN chain same as sales-by-category",
+      "ORDER BY quantity DESC LIMIT 5"
+    ],
+    "businessMeaning": "The bakery wants to know which bakery products sold the most units last month.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Best-Selling Products.",
+      "Top 5 product rows by quantity sold, with revenue and category."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Best-Selling Products tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      },
+      {
+        "clause": "LIMIT",
+        "why": "Restricts output to a top-N view for quick oral explanation."
+      }
+    ]
+  },
+  {
+    "id": "sql-12",
+    "title": "Peak Sales Hours",
+    "desc": "Which time periods of the day have the most orders?",
+    "category": "EXTRACT & CASE Bucketing",
+    "difficulty": "medium",
+    "sql": "SELECT\n    CASE\n        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 6 AND 7   THEN '06:00-08:00'\n        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 8 AND 9   THEN '08:00-10:00'\n        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 10 AND 11 THEN '10:00-12:00'\n        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 12 AND 13 THEN '12:00-14:00'\n        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 14 AND 15 THEN '14:00-16:00'\n        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 16 AND 17 THEN '16:00-18:00'\n        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 18 AND 19 THEN '18:00-20:00'\n        ELSE 'Other'\n    END AS time_range,\n    COUNT(o.OrderID) AS order_count,\n    SUM(o.TotalAmount) AS total_revenue,\n    ROUND(AVG(o.TotalAmount)::numeric, 2) AS avg_order_value\nFROM \"Order\" o\nWHERE o.Status IN ('Completed','Delivered')\nGROUP BY time_range\nORDER BY order_count DESC;",
+    "tables": [
+      "Order"
+    ],
+    "concepts": [
+      "EXTRACT(HOUR FROM ...)",
+      "CASE for bucketing",
+      "BETWEEN inclusive on both sides",
+      "GROUP BY computed alias"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What does EXTRACT(HOUR FROM ...) do?",
+        "text": "In this bakery context, eXTRACT(HOUR FROM o.OrderDate) pulls out just the hour component (0–23) from a timestamp. For example, 2026-02-14 09:30:00 returns 9. This lets us classify orders into time-of-day buckets."
+      },
+      {
+        "type": "concept",
+        "title": "How does CASE create time buckets?",
+        "text": "In this bakery context, cASE WHEN ... THEN ... END works like an if-else chain. Each WHEN tests a condition; the first true one determines the output. Here it maps hour values to readable time-range labels. ELSE 'Other' catches any hour not explicitly handled."
+      },
+      {
+        "type": "tip",
+        "title": "GROUP BY a computed expression",
+        "text": "In this bakery context, you can GROUP BY time_range even though time_range is a CASE expression. PostgreSQL allows grouping by column aliases in the SELECT list."
+      },
+      {
+        "type": "warn",
+        "title": "BETWEEN is inclusive on both sides",
+        "text": "In this bakery context, bETWEEN 8 AND 9 matches hours 8 and 9. So the bucket '08:00-10:00' captures orders at 8:00–8:59 and 9:00–9:59, which is exactly a 2-hour window."
+      }
+    ],
+    "checklist": [
+      "EXTRACT(HOUR FROM timestamp) returns 0-23",
+      "CASE WHEN BETWEEN ... THEN ... ELSE 'Other' END for bucketing",
+      "BETWEEN is inclusive on both ends",
+      "GROUP BY the CASE alias (time_range)",
+      "ORDER BY order_count DESC to find peak hours"
+    ],
+    "businessMeaning": "The bakery wants to know the busiest order windows to schedule labor and prep.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Peak Sales Hours.",
+      "One row per time bucket with order count, revenue, and average order value."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Peak Sales Hours tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      }
+    ]
+  },
+  {
+    "id": "sql-13",
+    "title": "Waste Management Metrics",
+    "desc": "Top 5 ingredients with the highest waste in the past year.",
+    "category": "Aggregation & Grouping",
+    "difficulty": "easy",
+    "sql": "SELECT\n    i.IngredientName,\n    i.UnitOfMeasure AS unit,\n    SUM(wl.QuantityWasted) AS total_waste,\n    COUNT(wl.WasteLogID) AS waste_incidents,\n    STRING_AGG(DISTINCT wl.Reason, '; ') AS reasons\nFROM WasteLog wl\nJOIN Ingredient i ON i.IngredientID = wl.IngredientID\nWHERE wl.WasteDate >= CURRENT_DATE - INTERVAL '1 year'\nGROUP BY i.IngredientID, i.IngredientName, i.UnitOfMeasure\nORDER BY total_waste DESC\nLIMIT 5;",
+    "tables": [
+      "WasteLog",
+      "Ingredient"
+    ],
+    "concepts": [
+      "STRING_AGG",
+      "INNER JOIN for existence check",
+      "INTERVAL for date filter",
+      "Top-N with LIMIT"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What does STRING_AGG do?",
+        "text": "In this bakery context, sTRING_AGG(DISTINCT wl.Reason, '; ') is an aggregate function that concatenates all distinct reason values within each group into a single semicolon-separated string. DISTINCT removes repeated reasons."
+      },
+      {
+        "type": "concept",
+        "title": "Why JOIN (not LEFT JOIN) here?",
+        "text": "In this bakery context, we only want ingredients that have waste records. An INNER JOIN naturally excludes ingredients with no matching waste log entries. LEFT JOIN would include zero-waste ingredients, which is not useful for a 'top waste' report."
+      },
+      {
+        "type": "tip",
+        "title": "COUNT vs SUM for different insights",
+        "text": "In this bakery context, sUM(wl.QuantityWasted) = total volume wasted. COUNT(wl.WasteLogID) = number of incidents. An ingredient could have high total waste from one large event or from many small ones — both metrics together tell the full story."
+      }
+    ],
+    "checklist": [
+      "INNER JOIN (not LEFT JOIN) — only ingredients with waste",
+      "CURRENT_DATE - INTERVAL '1 year' for date filter",
+      "SUM(QuantityWasted) = total volume",
+      "COUNT(WasteLogID) = number of incidents",
+      "STRING_AGG(DISTINCT ..., '; ') for reason list",
+      "ORDER BY total_waste DESC LIMIT 5"
+    ],
+    "businessMeaning": "The bakery wants to know which ingredients are wasted most so waste can be reduced.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Waste Management Metrics.",
+      "Top 5 ingredient rows by wasted quantity with incident count and reasons."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Waste Management Metrics tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      },
+      {
+        "clause": "LIMIT",
+        "why": "Restricts output to a top-N view for quick oral explanation."
+      }
+    ]
+  },
+  {
+    "id": "sql-14",
+    "title": "Sales by Channel",
+    "desc": "Summarize orders and revenue by sales channel last month, with % of total.",
+    "category": "CTEs & CROSS JOIN",
+    "difficulty": "hard",
+    "sql": "WITH channel_totals AS (\n    SELECT\n        SUM(TotalAmount) AS grand_total\n    FROM \"Order\"\n    WHERE Status IN ('Completed','Delivered')\n      AND OrderDate >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')\n      AND OrderDate <  DATE_TRUNC('month', CURRENT_DATE)\n)\nSELECT\n    o.SalesChannel AS channel,\n    COUNT(o.OrderID) AS number_of_orders,\n    SUM(o.TotalAmount) AS sales_revenue,\n    ROUND(\n        (SUM(o.TotalAmount) / ct.grand_total * 100)::numeric, 1\n    ) AS pct_of_total\nFROM \"Order\" o\nCROSS JOIN channel_totals ct\nWHERE o.Status IN ('Completed','Delivered')\n  AND o.OrderDate >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')\n  AND o.OrderDate <  DATE_TRUNC('month', CURRENT_DATE)\nGROUP BY o.SalesChannel, ct.grand_total\nORDER BY sales_revenue DESC;",
+    "tables": [
+      "Order"
+    ],
+    "concepts": [
+      "CTE for grand total",
+      "CROSS JOIN single-row CTE",
+      "Percentage calculation",
+      "GROUP BY non-aggregated reference"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What does CROSS JOIN do?",
+        "text": "In this bakery context, cROSS JOIN combines every row from the left table with every row from the right. Here channel_totals is a single row with the grand total. Cross-joining it makes ct.grand_total available on every order row, so each channel can compute its percentage of the whole."
+      },
+      {
+        "type": "concept",
+        "title": "Why use a CTE for the grand total?",
+        "text": "In this bakery context, the channel_totals CTE pre-computes the overall sum once. Without it, you would need a subquery in the SELECT that runs for every row. The CTE approach is clean and efficient."
+      },
+      {
+        "type": "tip",
+        "title": "Percentage calculation",
+        "text": "In this bakery context, (SUM(o.TotalAmount) / ct.grand_total * 100) divides each channel's revenue by the grand total and multiplies by 100 for a percentage. ROUND(..., 1) formats to one decimal place."
+      },
+      {
+        "type": "warn",
+        "title": "Why grand_total is in GROUP BY",
+        "text": "In this bakery context, ct.grand_total appears in SELECT without an aggregate function. SQL requires it to appear in GROUP BY. Since it is the same value for every row (it came from a single-row CTE), grouping by it does not change the grouping behavior."
+      }
+    ],
+    "checklist": [
+      "CTE computes grand total once",
+      "CROSS JOIN attaches single-row CTE to every order row",
+      "Percentage = SUM / grand_total * 100",
+      "ROUND(...::numeric, 1) for 1 decimal place",
+      "grand_total must appear in GROUP BY (non-aggregated column)",
+      "Same date filter applied in both CTE and main query"
+    ],
+    "businessMeaning": "The bakery wants to know how revenue splits by in-store, online, and other channels.",
+    "expectedResultShape": [
+      "Columns returned are based on the SELECT list for Sales by Channel.",
+      "One row per sales channel with orders, revenue, and percent contribution."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Sales by Channel tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      },
+      {
+        "clause": "WITH (CTE)",
+        "why": "Breaks complex bakery logic into readable named steps."
+      }
+    ]
+  },
+  {
+    "id": "sql-15",
+    "title": "Holiday Bestsellers",
+    "desc": "Most popular bakery products sold during holiday seasons.",
+    "category": "Associative Entity & Aggregation",
+    "difficulty": "hard",
+    "sql": "SELECT\n    h.HolidayName,\n    p.ProductName,\n    SUM(ol.Quantity) AS total_sold,\n    SUM(ol.Quantity * ol.UnitPrice) AS total_revenue\nFROM HolidaySale hs\nJOIN Holiday h ON h.HolidayID = hs.HolidayID\nJOIN \"Order\" o ON o.OrderID = hs.OrderID\nJOIN OrderLine ol ON ol.OrderID = o.OrderID\nJOIN Product p ON p.ProductID = ol.ProductID\nWHERE o.Status IN ('Completed','Delivered')\nGROUP BY h.HolidayID, h.HolidayName, p.ProductID, p.ProductName\nORDER BY h.HolidayName, total_sold DESC;",
+    "tables": [
+      "HolidaySale",
+      "Holiday",
+      "Order",
+      "OrderLine",
+      "Product"
+    ],
+    "concepts": [
+      "Associative table",
+      "Multi-column GROUP BY",
+      "ORDER BY with two dimensions",
+      "JOIN path tracing"
+    ],
+    "notes": [
+      {
+        "type": "concept",
+        "title": "What is a bridge / associative table?",
+        "text": "In this bakery context, HolidaySale is an associative table linking orders to holidays so one holiday can include many orders and one order can be tied to holiday analytics."
+      },
+      {
+        "type": "concept",
+        "title": "Why group by holiday and product?",
+        "text": "In this bakery context, grouping by holiday and product gives one row per holiday-product pair so the bakery can compare bestsellers within each season."
+      },
+      {
+        "type": "tip",
+        "title": "How ORDER BY is helping",
+        "text": "In this bakery context, ORDER BY HolidayName then total_sold DESC makes each holiday section easy to explain during oral questioning."
+      },
+      {
+        "type": "warn",
+        "title": "Why this JOIN chain matters",
+        "text": "In this bakery context, each JOIN follows the business path from holiday tags to completed orders to line items to product names; skipping a link changes meaning."
+      }
+    ],
+    "checklist": [
+      "Explain HolidaySale as the associative table",
+      "Trace JOIN path: HolidaySale -> Holiday -> Order -> OrderLine -> Product",
+      "Filter to completed or delivered orders only",
+      "Explain group grain: holiday + product",
+      "Interpret total_sold and total_revenue business meaning",
+      "Explain dual sort by holiday then bestseller rank"
+    ],
+    "businessMeaning": "The bakery wants to know which products perform best during holiday periods for planning stock and marketing.",
+    "expectedResultShape": [
+      "Columns: HolidayName, ProductName, total_sold, total_revenue",
+      "One row per holiday-product combination with units sold and revenue."
+    ],
+    "oralQuestions": [
+      "In one sentence, what does Holiday Bestsellers tell the bakery owner?",
+      "Why is each JOIN required for this requirement?",
+      "What would change if the WHERE filters were removed?",
+      "Why is GROUP BY or HAVING needed here (if present)?",
+      "What does one output row represent in business terms?"
+    ],
+    "clauseBreakdown": [
+      {
+        "clause": "SELECT",
+        "why": "Defines which output columns the bakery team will review."
+      },
+      {
+        "clause": "FROM",
+        "why": "Sets the base table for the bakery business question."
+      },
+      {
+        "clause": "JOIN",
+        "why": "Connects related bakery tables so the result has full context."
+      },
+      {
+        "clause": "WHERE",
+        "why": "Filters to only relevant bakery records before grouping."
+      },
+      {
+        "clause": "GROUP BY",
+        "why": "Aggregates rows to the reporting grain needed by bakery management."
+      },
+      {
+        "clause": "ORDER BY",
+        "why": "Sorts results so the most actionable bakery rows appear first."
+      }
+    ]
+  }
+]

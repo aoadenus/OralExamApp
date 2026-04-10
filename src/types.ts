@@ -1,4 +1,31 @@
 export type RelationshipType = 'one-to-one' | 'one-to-many' | 'many-to-many';
+
+export interface SqlNote {
+  type: 'concept' | 'tip' | 'warn';
+  title: string;
+  text: string;
+}
+
+export interface SqlRequirement {
+  id: string;
+  title: string;
+  desc: string;
+  category: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  sql: string;
+  tables: string[];
+  concepts: string[];
+  notes: SqlNote[];
+  checklist: string[];
+  businessMeaning?: string;
+  expectedResultShape?: string[];
+  oralQuestions?: string[];
+  clauseBreakdown?: Array<{
+    clause: string;
+    why: string;
+  }>;
+}
+
 export type Cardinality = '1:1' | '1:M' | 'M:N';
 export type MasteryResult = 'correct' | 'partial' | 'incorrect';
 
@@ -72,6 +99,8 @@ export interface OralQuestion {
   prompt: string;
   entityId?: string;
   relationshipId?: string;
+  entityIds?: string[];
+  modelAnswer?: string;
   expectedChecklist: string[];
   domainId?: string;
   difficulty: 'easy' | 'medium' | 'hard';

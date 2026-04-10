@@ -18,6 +18,8 @@ import {
   relationshipsForDomain,
   subtypes,
 } from './lib/content';
+import sqlRequirementsData from './data/sql-requirements.json';
+import { SqlExamBanner, SqlFlashcards, SqlMockOral, SqlStudyGuide } from './sql-trainer';
 import { buildWeakSpotAnalytics, calculateTodayStudyTime, getItemProgress, masteryLabel, useProgressStore } from './lib/progress';
 import { pickAssociativeEntity, pickEntity, pickRelationship } from './lib/questions';
 import {
@@ -39,6 +41,7 @@ import type {
   ProgressState,
   Relationship,
   SubtypeRelationship,
+  SqlRequirement,
 } from './types';
 
 type Navigate = (path: string) => void;
@@ -59,13 +62,11 @@ type MatchingPrompt = {
 
 const navItems = [
   { label: 'Dashboard', path: '/' },
-  { label: 'Study', path: '/study' },
-  { label: 'Flashcards', path: '/study/flashcards' },
-  { label: 'Visual ERD', path: '/study/erd-visual' },
-  { label: 'Cheat Sheet', path: '/study/cheat-sheet' },
-  { label: 'Practice', path: '/practice' },
-  { label: 'Mock Oral', path: '/mock-oral' },
-  { label: 'Review', path: '/review' },
+  { label: 'SQL Study', path: '/sql-study' },
+  { label: 'Night Before', path: '/sql-rapid-fire' },
+  { label: 'SQL Flashcards', path: '/sql-flashcards' },
+  { label: 'SQL Mock Oral', path: '/sql-mock-oral' },
+  { label: 'Study Plan', path: '/study' },
   { label: 'Progress', path: '/progress' },
   { label: 'Settings', path: '/settings' },
 ];
@@ -82,6 +83,7 @@ const fkPlacementRules = [
 ];
 const erdImageSrc = `${import.meta.env.BASE_URL}erd/group8-erd.png`;
 const erdPdfSrc = `${import.meta.env.BASE_URL}erd/group8-erd.pdf`;
+const sqlRequirements = sqlRequirementsData as SqlRequirement[];
 
 export default function App() {
   const route = useRoute();
@@ -112,6 +114,10 @@ function RouteRenderer({
   progressStore: ReturnType<typeof useProgressStore>;
 }) {
   if (path === '/') return <Dashboard navigate={navigate} progressStore={progressStore} />;
+  if (path === '/sql-study') return <SqlStudyGuide navigate={navigate} progressStore={progressStore} />;
+  if (path === '/sql-rapid-fire') return <SqlStudyGuide navigate={navigate} progressStore={progressStore} initialRapidFire />;
+  if (path === '/sql-flashcards') return <SqlFlashcards progressStore={progressStore} />;
+  if (path === '/sql-mock-oral') return <SqlMockOral navigate={navigate} progressStore={progressStore} />;
   if (path === '/study') return <StudyHub navigate={navigate} progressStore={progressStore} />;
   if (path === '/study/flashcards') return <StudyFlashcards progressStore={progressStore} />;
   if (path === '/study/erd-visual') return <VisualErdPractice progressStore={progressStore} />;
@@ -153,22 +159,22 @@ function AppShell({ children, path, navigate }: { children: React.ReactNode; pat
     <div className="mx-auto flex min-h-screen max-w-[1920px]">
       <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-pink-100 bg-white/90 px-5 py-6 shadow-[2px_0_16px_rgba(236,72,153,0.06)] lg:block" style={{ backdropFilter: 'blur(8px)' }}>
         <button className="mb-8 text-left group" onClick={() => navigate('/')}>
-          <span className="mb-2 block text-2xl">🧁</span>
-          <span className="block text-xs font-bold uppercase tracking-widest text-pink-400">CIS 4365 Group 8</span>
+          <span className="mb-2 block text-2xl">🗄️</span>
+          <span className="block text-xs font-bold uppercase tracking-widest text-blue-500">Mama's Little Bakery</span>
           <span
             className="block text-xl font-extrabold leading-tight"
             style={{
-              background: 'linear-gradient(135deg,#f59e0b,#ec4899,#8b5cf6)',
+              background: 'linear-gradient(135deg,#2563eb,#7c3aed,#0891b2)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
             }}
           >
-            Bakery ERD
+            SQL Oral
             <br />
             Oral Trainer
           </span>
-          <span className="mt-1 block text-[11px] text-slate-400">Mama's Little Bakery</span>
+          <span className="mt-1 block text-[11px] text-slate-400">MySQL Workbench + AWS RDS</span>
         </button>
         <nav aria-label="Primary navigation" className="space-y-1">
           {navItems.map((item) => (
@@ -182,7 +188,7 @@ function AppShell({ children, path, navigate }: { children: React.ReactNode; pat
         className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-pink-100 bg-white/95 px-2 py-2 shadow-[0_-4px_20px_rgba(236,72,153,0.08)] lg:hidden"
         style={{ backdropFilter: 'blur(8px)' }}
       >
-        {navItems.slice(0, 10).map((item) => (
+        {navItems.slice(0, 13).map((item) => (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
@@ -230,19 +236,41 @@ function Dashboard({
   progressStore: ReturnType<typeof useProgressStore>;
 }) {
   const { progress, analytics } = progressStore;
+  const sqlIds = sqlRequirements.map((req) => req.id);
+  const sqlProgressItems = sqlIds.map((id) => getItemProgress(progress, id));
+  const sqlReadiness =
+    sqlProgressItems.length > 0
+      ? sqlProgressItems.reduce((sum, item) => sum + item.mastery, 0) / sqlProgressItems.length
+      : 0;
+  const sqlAttempted = sqlProgressItems.filter((item) => item.attempts > 0).length;
+  const sqlMastered = sqlProgressItems.filter((item) => item.mastery >= 0.75).length;
+  const weakestThree = [...sqlRequirements]
+    .map((req) => ({
+      req,
+      mastery: getItemProgress(progress, req.id).mastery,
+      attempts: getItemProgress(progress, req.id).attempts,
+    }))
+    .sort((a, b) => a.mastery - b.mastery)
+    .slice(0, 3);
   const recent = progress.mockOrals.slice(0, 3);
   const todayMs = calculateTodayStudyTime(progress.studySessions);
   const totalHours = (progress.totalStudyTimeMs / 3_600_000).toFixed(1);
   const milestone = currentUnacknowledgedMilestone(progress);
   const dailyGoalMinutes = progress.settings.dailyGoalMinutes ?? 15;
   const dailyGoalProgress = Math.min(1, todayMs / Math.max(dailyGoalMinutes * 60_000, 1));
+  const nextSqlAction =
+    sqlAttempted === 0
+      ? 'Start in SQL Study and read all 15 requirements once before you score anything.'
+      : sqlMastered < 6
+        ? 'Use SQL Flashcards for recall, then explain the weakest requirements out loud in SQL Study.'
+        : 'Run SQL Mock Oral and only use ERD reference if a table link blocks your explanation.';
 
   return (
-    <Page title="🏠 Dashboard" eyebrow="✨ Solo oral exam practice" action={<PrimaryButton onClick={() => navigate('/mock-oral/session')}>🎤 Start Mock Oral</PrimaryButton>}>
+    <Page title="Dashboard" eyebrow="SQL-First Oral Exam Revision" action={<PrimaryButton onClick={() => navigate('/sql-mock-oral')}>Start SQL Mock Oral</PrimaryButton>}>
 
-      {/* Bakery ERD Illustration Banner */}
+      {/* SQL Exam Banner */}
       <div className="hidden md:block">
-        <BakeryIllustration />
+        <SqlExamBanner navigate={navigate} />
       </div>
       <MilestoneCelebration milestone={milestone} onDismiss={progressStore.acknowledgeMilestone} />
 
@@ -250,31 +278,27 @@ function Dashboard({
         <Card className="border-pink-100 bg-gradient-to-br from-white to-pink-50/40">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase text-pink-500">🧁 Overall readiness</p>
-              <h2 className="mt-2 text-5xl font-extrabold text-slate-950">{percent(progress.overallReadiness)}</h2>
+              <p className="text-sm font-semibold uppercase text-pink-500">SQL readiness</p>
+              <h2 className="mt-2 text-5xl font-extrabold text-slate-950">{percent(sqlReadiness)}</h2>
               <p className="mt-3 hidden max-w-2xl text-slate-600 sm:block">
-                Practice is weighted across <strong>41 entities</strong> 🏷️ and <strong>46 ERD relationship rules</strong> 🔗. New items start at zero until you drill them.
+                Assume the ERD is already familiar. This dashboard is now for turning that schema knowledge into faster SQL explanation, clause recognition, and oral recall.
               </p>
             </div>
             <div className="hidden sm:block">
-              <ReadinessRing value={progress.overallReadiness} />
+              <ReadinessRing value={sqlReadiness} />
             </div>
           </div>
           <div className="mt-6 hidden gap-3 sm:grid sm:grid-cols-4">
-            <Metric label="🎯 Attempted" value={String(analytics.attemptedCount)} />
-            <Metric label="⭐ Mastered" value={String(analytics.masteredCount)} />
-            <Metric label="🔥 Streak" value={String(progress.streak)} />
-            <Metric label="⏱️ Today" value={todayMs > 0 ? formatStudyTime(todayMs) : '—'} />
+            <Metric label="SQL Attempted" value={String(sqlAttempted)} />
+            <Metric label="SQL Mastered" value={String(sqlMastered)} />
+            <Metric label="Streak" value={String(progress.streak)} />
+            <Metric label="Today" value={todayMs > 0 ? formatStudyTime(todayMs) : '—'} />
           </div>
         </Card>
         <Card className="border-purple-100 bg-gradient-to-br from-white to-purple-50/30">
-          <h2 className="text-xl font-bold text-slate-950">💡 Recommended next action</h2>
-          <p className="mt-2 text-slate-600">
-            {analytics.weakestDomain
-              ? `🎯 Review ${analytics.weakestDomain.domain.name}. Current domain mastery is ${percent(analytics.weakestDomain.mastery)}.`
-              : '🚀 Start with Entity Mastery, then run a mock oral!'}
-          </p>
-          <p className="mt-2 text-sm text-slate-500">⏰ Total study time: {totalHours}h</p>
+          <h2 className="text-xl font-bold text-slate-950">Recommended next action</h2>
+          <p className="mt-2 text-slate-600">{nextSqlAction}</p>
+          <p className="mt-2 text-sm text-slate-500">Total study time: {totalHours}h</p>
           <div className="mt-4 rounded-lg border border-purple-100 bg-white/80 p-3">
             <p className="font-semibold text-slate-950">Exam countdown</p>
             <p className="mt-1 text-sm text-slate-600">{examCountdownLabel(progress.settings.examDate)}</p>
@@ -285,9 +309,25 @@ function Dashboard({
             <ProgressBar value={dailyGoalProgress} className="mt-2" />
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
-            <SecondaryButton onClick={() => navigate('/practice/quick-drills')}>⚡ Quick Drills</SecondaryButton>
-            <SecondaryButton onClick={() => navigate('/practice/free-recall')}>✍️ Free Recall</SecondaryButton>
-            <SecondaryButton onClick={() => navigate('/review')}>🔍 Review Mistakes</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-study')}>SQL Study</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-flashcards')}>SQL Flashcards</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-mock-oral')}>SQL Mock Oral</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-rapid-fire')}>Night Before Exam</SecondaryButton>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-6">
+        <Card className="border-amber-100 bg-gradient-to-br from-white to-amber-50/40">
+          <h2 className="text-xl font-bold text-slate-950">📉 Weakest 3 SQL Requirements</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {weakestThree.map(({ req, mastery, attempts }) => (
+              <button key={req.id} onClick={() => navigate('/sql-study')} className="rounded-xl border border-amber-200 bg-white p-3 text-left hover:bg-amber-50">
+                <p className="text-sm font-semibold text-slate-900">{req.title}</p>
+                <p className="mt-1 text-xs text-slate-500">Attempts: {attempts}</p>
+                <p className="mt-1 text-xs text-slate-500">Mastery: {percent(mastery)}</p>
+              </button>
+            ))}
           </div>
         </Card>
       </div>
@@ -1081,7 +1121,7 @@ function RelationshipBuilder({ progressStore }: { progressStore: ReturnType<type
   }
 
   return (
-    <Page title="Business Rule Builder" eyebrow="46 bi-directional rules" action={<FavoriteButton itemId={relationship.id} progressStore={progressStore} />}>
+    <Page title="Business Rule Builder" eyebrow="48 bi-directional rules" action={<FavoriteButton itemId={relationship.id} progressStore={progressStore} />}>
       <RelationshipQuestionCard
         key={relationship.id}
         relationship={relationship}
@@ -1464,7 +1504,7 @@ function MockOralSetup({
           <h2 className="text-xl font-bold text-slate-950">Format</h2>
           <ul className="mt-4 space-y-3 text-slate-700">
             <li>One random entity explanation question.</li>
-            <li>One random relationship and business-rule question.</li>
+            <li>One random relationship, FK, or logic question.</li>
             <li>Five-minute timer with a self-grading rubric.</li>
             <li>Progress saved locally on this device.</li>
           </ul>
@@ -1524,6 +1564,10 @@ function MockOralSession({
   const [finished, setFinished] = useState(false);
   const entity = entityQuestion.entityId ? entityById[entityQuestion.entityId] : undefined;
   const relationship = relationshipQuestion.relationshipId ? relationshipById[relationshipQuestion.relationshipId] : undefined;
+  const entityQuestionEntityIds = oralQuestionEntityIds(entityQuestion, entity, undefined);
+  const relationshipQuestionEntityIds = oralQuestionEntityIds(relationshipQuestion, undefined, relationship);
+  const entityModelAnswer = oralQuestionModelAnswer(entityQuestion, entity, undefined);
+  const relationshipModelAnswer = oralQuestionModelAnswer(relationshipQuestion, undefined, relationship);
   const startedAtRef = useState(() => Date.now())[0];
 
   useEffect(() => {
@@ -1641,18 +1685,20 @@ function MockOralSession({
             question={entityQuestion}
             notes={entityAnswer}
             setNotes={setEntityAnswer}
-            entityIds={entity ? [entity.id] : []}
+            entityIds={entityQuestionEntityIds}
             favoriteItemId={entity?.id}
             progressStore={progressStore}
+            showVisualContext={false}
           />
           <ExamQuestionPanel
-            title="Phase 2: Hard relationship question"
+            title="Phase 2: Hard relationship / logic question"
             question={relationshipQuestion}
             notes={relationshipAnswer}
             setNotes={setRelationshipAnswer}
-            entityIds={relationship ? relationshipFocusEntityIds(relationship) : []}
+            entityIds={relationshipQuestionEntityIds}
             favoriteItemId={relationship?.id}
             progressStore={progressStore}
+            showVisualContext={false}
           />
         </div>
       ) : (
@@ -1660,26 +1706,28 @@ function MockOralSession({
           <MockQuestionPanel
             title={strict ? 'Self-score: Easy entity question' : 'Phase 1: Easy entity question'}
             question={entityQuestion}
-            answer={entity ? <EntitySummary entity={entity} compact /> : null}
-            followUp={entity ? entityFollowUp(entity) : undefined}
+            answer={entityModelAnswer}
+            followUp={!strict && entity ? entityFollowUp(entity) : undefined}
             notes={entityAnswer}
             setNotes={setEntityAnswer}
             grade={entityGrade}
-            entityIds={entity ? [entity.id] : []}
+            entityIds={entityQuestionEntityIds}
             favoriteItemId={entity?.id}
             progressStore={progressStore}
+            showVisualContext={!strict}
           />
           <MockQuestionPanel
-            title={strict ? 'Self-score: Hard relationship question' : 'Phase 2: Hard relationship question'}
+            title={strict ? 'Self-score: Hard relationship / logic question' : 'Phase 2: Hard relationship / logic question'}
             question={relationshipQuestion}
-            answer={relationship ? <RelationshipSummary relationship={relationship} compact /> : null}
-            followUp={relationship ? relationshipFollowUp(relationship) : undefined}
+            answer={relationshipModelAnswer}
+            followUp={!strict && relationship ? relationshipFollowUp(relationship) : undefined}
             notes={relationshipAnswer}
             setNotes={setRelationshipAnswer}
             grade={relationshipGrade}
-            entityIds={relationship ? relationshipFocusEntityIds(relationship) : []}
+            entityIds={relationshipQuestionEntityIds}
             favoriteItemId={relationship?.id}
             progressStore={progressStore}
+            showVisualContext={!strict}
           />
         </div>
       )}
@@ -1937,6 +1985,7 @@ function ExamQuestionPanel({
   entityIds,
   favoriteItemId,
   progressStore,
+  showVisualContext = true,
 }: {
   title: string;
   question: OralQuestion;
@@ -1945,12 +1994,15 @@ function ExamQuestionPanel({
   entityIds: string[];
   favoriteItemId?: string;
   progressStore: ReturnType<typeof useProgressStore>;
+  showVisualContext?: boolean;
 }) {
   return (
     <Card className="border-red-200 bg-red-50">
-      <div className="mb-5">
-        <ErdFocusPanel entityIds={entityIds} title="Exam visual context" compact />
-      </div>
+      {showVisualContext && entityIds.length > 0 && (
+        <div className="mb-5">
+          <ErdFocusPanel entityIds={entityIds} title="Exam visual context" compact />
+        </div>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold uppercase text-red-700">{title}</p>
@@ -1979,6 +2031,7 @@ function MockQuestionPanel({
   entityIds,
   favoriteItemId,
   progressStore,
+  showVisualContext = true,
 }: {
   title: string;
   question: OralQuestion;
@@ -1990,14 +2043,21 @@ function MockQuestionPanel({
   entityIds: string[];
   favoriteItemId?: string;
   progressStore: ReturnType<typeof useProgressStore>;
+  showVisualContext?: boolean;
 }) {
   const [showAnswer, setShowAnswer] = useState(false);
 
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [question.id]);
+
   return (
     <Card>
-      <div className="mb-5">
-        <ErdFocusPanel entityIds={entityIds} title="Mock oral visual context" compact />
-      </div>
+      {showVisualContext && entityIds.length > 0 && (
+        <div className="mb-5">
+          <ErdFocusPanel entityIds={entityIds} title="Mock oral visual context" compact />
+        </div>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold uppercase text-slate-500">{title}</p>
@@ -2209,6 +2269,12 @@ function ConfidenceRisk({ result, confidence }: { result: MasteryResult; confide
 
 function HintStepper({ hints }: { hints: string[] }) {
   const [count, setCount] = useState(0);
+  const hintKey = hints.join('||');
+
+  useEffect(() => {
+    setCount(0);
+  }, [hintKey]);
+
   if (hints.length === 0) return null;
   return (
     <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-3">
@@ -2349,10 +2415,12 @@ function ErdFocusPanel({
   entityIds,
   title = 'ERD focus',
   compact = false,
+  defaultOpen = false,
 }: {
   entityIds: string[];
   title?: string;
   compact?: boolean;
+  defaultOpen?: boolean;
 }) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const focusHotspots = unique(entityIds)
@@ -2370,7 +2438,7 @@ function ErdFocusPanel({
   const spanY = Math.max(maxY - minY, 8);
   const autoScale = Math.min(10, Math.max(compact ? 3.5 : 3, Math.min(120 / spanX, 90 / spanY)));
   const [focusZoom, setFocusZoom] = useState(autoScale);
-  const [visualOpen, setVisualOpen] = useState(true);
+  const [visualOpen, setVisualOpen] = useState(defaultOpen);
   const heightClass = compact ? 'h-56' : 'h-72';
   const focusKey = entityIds.join('|');
 
@@ -2384,6 +2452,10 @@ function ErdFocusPanel({
   useEffect(() => {
     setFocusZoom(autoScale);
   }, [autoScale, focusKey]);
+
+  useEffect(() => {
+    setVisualOpen(defaultOpen);
+  }, [defaultOpen, focusKey]);
 
   useEffect(() => {
     if (!hasFocus || !visualOpen) return;
@@ -2758,7 +2830,7 @@ function BakeryIllustration() {
         <div>
           <p className="text-sm font-bold uppercase tracking-widest text-pink-500">🧁 Mama's Little Bakery ERD</p>
           <h2 className="mt-1 text-2xl font-extrabold text-slate-800">Study smarter, not harder! 🍰</h2>
-          <p className="mt-1 text-sm text-slate-500">41 entities • 46 rules • 6 domains</p>
+          <p className="mt-1 text-sm text-slate-500">41 entities • 48 rules • 6 domains</p>
         </div>
         {/* Inline SVG bakery illustration */}
         <div className="flex shrink-0 items-end gap-1 select-none" aria-hidden="true">
@@ -3122,6 +3194,29 @@ function relationshipFocusEntityIds(relationship: Relationship) {
 
 function bridgeFocusEntityIds(bridge: AssociativeEntity) {
   return unique([...bridge.resolves, bridge.id]);
+}
+
+function oralQuestionEntityIds(question: OralQuestion, entity?: Entity, relationship?: Relationship) {
+  if (question.entityIds?.length) return question.entityIds;
+  if (entity) return [entity.id];
+  if (relationship) return relationshipFocusEntityIds(relationship);
+  return [];
+}
+
+function oralQuestionModelAnswer(question: OralQuestion, entity?: Entity, relationship?: Relationship) {
+  if (entity) return <EntitySummary entity={entity} compact />;
+  if (relationship) return <RelationshipSummary relationship={relationship} compact />;
+  if (question.modelAnswer) return <QuestionModelAnswer answer={question.modelAnswer} />;
+  return null;
+}
+
+function QuestionModelAnswer({ answer }: { answer: string }) {
+  return (
+    <Card className="border-blue-200 bg-blue-50">
+      <p className="text-sm font-semibold uppercase text-blue-700">Model answer</p>
+      <p className="mt-2 text-slate-800">{answer}</p>
+    </Card>
+  );
 }
 
 function toOralAnswer(question: OralQuestion, userAnswer: string, grade: GradeResult) {

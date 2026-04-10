@@ -39,6 +39,6 @@
     "name": "Compliance & Regulatory",
     "description": "Nutritional information, allergy information, and customer allergy tracking records.",
     "entityIds": ["nutritionalinfo", "allergyinfo", "customerallergyinfo"],
-    "relationshipIds": ["rule-46"]
+    "relationshipIds": ["rule-46", "rule-47", "rule-48"]
   }
 ]
