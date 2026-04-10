@@ -19,6 +19,7 @@ import {
   subtypes,
 } from './lib/content';
 import sqlRequirementsData from './data/sql-requirements.json';
+import { SqlGamesLab } from './sql-games';
 import { SqlExamBanner, SqlFlashcards, SqlMockOral, SqlStudyGuide } from './sql-trainer';
 import { buildWeakSpotAnalytics, calculateTodayStudyTime, getItemProgress, masteryLabel, useProgressStore } from './lib/progress';
 import { pickAssociativeEntity, pickEntity, pickRelationship } from './lib/questions';
@@ -63,12 +64,19 @@ type MatchingPrompt = {
 const navItems = [
   { label: 'Dashboard', path: '/' },
   { label: 'SQL Study', path: '/sql-study' },
-  { label: 'Night Before', path: '/sql-rapid-fire' },
   { label: 'SQL Flashcards', path: '/sql-flashcards' },
   { label: 'SQL Mock Oral', path: '/sql-mock-oral' },
+  { label: 'SQL Games', path: '/sql-games' },
   { label: 'Study Plan', path: '/study' },
   { label: 'Progress', path: '/progress' },
-  { label: 'Settings', path: '/settings' },
+];
+
+const erdVaultNavItems = [
+  { label: 'ERD Overview', path: '/study/cheat-sheet' },
+  { label: 'Entity Browser', path: '/study/entities' },
+  { label: 'Domain Mastery', path: '/study/domains' },
+  { label: 'ERD Mock Oral', path: '/mock-oral/session' },
+  { label: 'Business Rules', path: '/study/relationships' },
 ];
 
 const entityModes: DrillMode[] = ['purpose', 'pk', 'fk', 'attributes'];
@@ -116,12 +124,13 @@ function RouteRenderer({
   if (path === '/') return <Dashboard navigate={navigate} progressStore={progressStore} />;
   if (path === '/sql-study') return <SqlStudyGuide navigate={navigate} progressStore={progressStore} />;
   if (path === '/sql-rapid-fire') return <SqlStudyGuide navigate={navigate} progressStore={progressStore} initialRapidFire />;
+  if (path === '/sql-games') return <SqlGamesLab navigate={navigate} progressStore={progressStore} />;
   if (path === '/sql-flashcards') return <SqlFlashcards progressStore={progressStore} />;
   if (path === '/sql-mock-oral') return <SqlMockOral navigate={navigate} progressStore={progressStore} />;
-  if (path === '/study') return <StudyHub navigate={navigate} progressStore={progressStore} />;
+  if (path === '/study') return <SqlStudyPlan navigate={navigate} progressStore={progressStore} />;
   if (path === '/study/flashcards') return <StudyFlashcards progressStore={progressStore} />;
   if (path === '/study/erd-visual') return <VisualErdPractice progressStore={progressStore} />;
-  if (path === '/study/cheat-sheet') return <CheatSheet navigate={navigate} />;
+  if (path === '/study/cheat-sheet') return <SqlErdBackupReference navigate={navigate} progressStore={progressStore} />;
   if (path === '/practice') return <PracticeHub navigate={navigate} progressStore={progressStore} />;
   if (path === '/practice/quick-drills') return <QuickDrills progressStore={progressStore} />;
   if (path === '/practice/free-recall') return <FreeRecallDrill progressStore={progressStore} />;
@@ -157,10 +166,13 @@ function RouteRenderer({
 function AppShell({ children, path, navigate }: { children: React.ReactNode; path: string; navigate: Navigate }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-[1920px]">
-      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-pink-100 bg-white/90 px-5 py-6 shadow-[2px_0_16px_rgba(236,72,153,0.06)] lg:block" style={{ backdropFilter: 'blur(8px)' }}>
+      <aside
+        className="sticky top-0 hidden h-screen w-[clamp(15rem,22vw,21rem)] shrink-0 overflow-y-auto border-r border-pink-100 bg-white/90 px-4 py-6 shadow-[2px_0_16px_rgba(236,72,153,0.06)] lg:block xl:px-5"
+        style={{ backdropFilter: 'blur(8px)' }}
+      >
         <button className="mb-8 text-left group" onClick={() => navigate('/')}>
           <span className="mb-2 block text-2xl">🗄️</span>
-          <span className="block text-xs font-bold uppercase tracking-widest text-blue-500">Mama's Little Bakery</span>
+          <span className="block text-xs font-bold uppercase tracking-widest text-blue-500">RestaurantDB</span>
           <span
             className="block text-xl font-extrabold leading-tight"
             style={{
@@ -172,23 +184,32 @@ function AppShell({ children, path, navigate }: { children: React.ReactNode; pat
           >
             SQL Oral
             <br />
-            Oral Trainer
+            Trainer
           </span>
-          <span className="mt-1 block text-[11px] text-slate-400">MySQL Workbench + AWS RDS</span>
+          <span className="mt-1 block text-[11px] text-slate-400">ERD understood. SQL explanation first.</span>
         </button>
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">SQL Prep</p>
         <nav aria-label="Primary navigation" className="space-y-1">
           {navItems.map((item) => (
             <NavButton key={item.path} item={item} active={isActivePath(path, item.path)} navigate={navigate} />
           ))}
         </nav>
+        <div className="mt-6 border-t border-slate-200 pt-4">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">ERD Vault</p>
+          <nav aria-label="ERD vault navigation" className="space-y-1">
+            {erdVaultNavItems.map((item) => (
+              <NavButton key={item.path} item={item} active={isActivePath(path, item.path)} navigate={navigate} />
+            ))}
+          </nav>
+        </div>
       </aside>
-      <main className="min-w-0 flex-1 px-4 pb-24 pt-4 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
+      <main className="min-w-0 flex-1 overflow-x-hidden px-4 pb-24 pt-4 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
       <nav
         aria-label="Mobile navigation"
         className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-pink-100 bg-white/95 px-2 py-2 shadow-[0_-4px_20px_rgba(236,72,153,0.08)] lg:hidden"
         style={{ backdropFilter: 'blur(8px)' }}
       >
-        {navItems.slice(0, 13).map((item) => (
+        {navItems.slice(0, 5).map((item) => (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
@@ -217,13 +238,13 @@ function NavButton({
   return (
     <button
       onClick={() => navigate(item.path)}
-      className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-all duration-200 ${
+      className={`w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold leading-snug transition-all duration-200 ${
         active
           ? 'bg-gradient-to-r from-pink-50 to-purple-50 text-pink-700 shadow-sm border border-pink-100'
           : 'text-slate-600 hover:bg-gradient-to-r hover:from-slate-50 hover:to-pink-50 hover:text-slate-900'
       }`}
     >
-      {item.label}
+      <span className="block break-words">{item.label}</span>
     </button>
   );
 }
@@ -235,7 +256,11 @@ function Dashboard({
   navigate: Navigate;
   progressStore: ReturnType<typeof useProgressStore>;
 }) {
-  const { progress, analytics } = progressStore;
+  const { progress } = progressStore;
+  const analytics: {
+    domainProgress: Array<{ domain: (typeof domains)[number]; mastery: number }>;
+    weakItems: [string, { mastery: number; attempts: number; lastResult?: string }][];
+  } = { domainProgress: [], weakItems: [] };
   const sqlIds = sqlRequirements.map((req) => req.id);
   const sqlProgressItems = sqlIds.map((id) => getItemProgress(progress, id));
   const sqlReadiness =
@@ -258,6 +283,20 @@ function Dashboard({
   const milestone = currentUnacknowledgedMilestone(progress);
   const dailyGoalMinutes = progress.settings.dailyGoalMinutes ?? 15;
   const dailyGoalProgress = Math.min(1, todayMs / Math.max(dailyGoalMinutes * 60_000, 1));
+  const categoryProgress = Array.from(new Set(sqlRequirements.map((req) => req.category)))
+    .map((category) => {
+      const items = sqlRequirements.filter((req) => req.category === category);
+      const mastery =
+        items.reduce((sum, req) => sum + getItemProgress(progress, req.id).mastery, 0) / Math.max(items.length, 1);
+      const mastered = items.filter((req) => getItemProgress(progress, req.id).mastery >= 0.75).length;
+      return {
+        category,
+        mastery,
+        mastered,
+        total: items.length,
+      };
+    })
+    .sort((a, b) => a.mastery - b.mastery);
   const nextSqlAction =
     sqlAttempted === 0
       ? 'Start in SQL Study and read all 15 requirements once before you score anything.'
@@ -269,13 +308,13 @@ function Dashboard({
     <Page title="Dashboard" eyebrow="SQL-First Oral Exam Revision" action={<PrimaryButton onClick={() => navigate('/sql-mock-oral')}>Start SQL Mock Oral</PrimaryButton>}>
 
       {/* SQL Exam Banner */}
-      <div className="hidden md:block">
+      <div className="hidden">
         <SqlExamBanner navigate={navigate} />
       </div>
       <MilestoneCelebration milestone={milestone} onDismiss={progressStore.acknowledgeMilestone} />
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="border-pink-100 bg-gradient-to-br from-white to-pink-50/40">
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card className="border-pink-100 bg-gradient-to-br from-white to-pink-50/30">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase text-pink-500">SQL readiness</p>
@@ -292,17 +331,16 @@ function Dashboard({
             <Metric label="SQL Attempted" value={String(sqlAttempted)} />
             <Metric label="SQL Mastered" value={String(sqlMastered)} />
             <Metric label="Streak" value={String(progress.streak)} />
-            <Metric label="Today" value={todayMs > 0 ? formatStudyTime(todayMs) : '—'} />
+            <Metric label="Today" value={todayMs > 0 ? formatStudyTime(todayMs) : '-'} />
           </div>
         </Card>
-        <Card className="border-purple-100 bg-gradient-to-br from-white to-purple-50/30">
+        <Card className="border-purple-100 bg-gradient-to-br from-white to-purple-50/20">
           <h2 className="text-xl font-bold text-slate-950">Recommended next action</h2>
           <p className="mt-2 text-slate-600">{nextSqlAction}</p>
           <p className="mt-2 text-sm text-slate-500">Total study time: {totalHours}h</p>
+          <ElegantExamCountdown readiness={sqlReadiness} nextFocus={nextSqlAction} />
           <div className="mt-4 rounded-lg border border-purple-100 bg-white/80 p-3">
-            <p className="font-semibold text-slate-950">Exam countdown</p>
-            <p className="mt-1 text-sm text-slate-600">{examCountdownLabel(progress.settings.examDate)}</p>
-            <div className="mt-3 flex items-center justify-between gap-3 text-sm text-slate-600">
+            <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
               <span>Daily goal: {formatStudyTime(todayMs)} / {dailyGoalMinutes}m</span>
               <span>{percent(dailyGoalProgress)}</span>
             </div>
@@ -310,16 +348,16 @@ function Dashboard({
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             <SecondaryButton onClick={() => navigate('/sql-study')}>SQL Study</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-games')}>SQL Games</SecondaryButton>
             <SecondaryButton onClick={() => navigate('/sql-flashcards')}>SQL Flashcards</SecondaryButton>
             <SecondaryButton onClick={() => navigate('/sql-mock-oral')}>SQL Mock Oral</SecondaryButton>
-            <SecondaryButton onClick={() => navigate('/sql-rapid-fire')}>Night Before Exam</SecondaryButton>
           </div>
         </Card>
       </div>
 
       <div className="mt-6">
         <Card className="border-amber-100 bg-gradient-to-br from-white to-amber-50/40">
-          <h2 className="text-xl font-bold text-slate-950">📉 Weakest 3 SQL Requirements</h2>
+          <h2 className="text-xl font-bold text-slate-950">Weakest 3 SQL Requirements</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {weakestThree.map(({ req, mastery, attempts }) => (
               <button key={req.id} onClick={() => navigate('/sql-study')} className="rounded-xl border border-amber-200 bg-white p-3 text-left hover:bg-amber-50">
@@ -332,7 +370,74 @@ function Dashboard({
         </Card>
       </div>
 
-      <div className="hidden md:block">
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <Card className="border-cyan-100 bg-gradient-to-br from-white to-cyan-50/40">
+          <h2 className="text-xl font-bold text-slate-950">Study in this order</h2>
+          <div className="mt-4 space-y-3 text-sm text-slate-700">
+            <div className="rounded-xl border border-cyan-100 bg-white/90 p-3">
+              <p className="font-semibold text-slate-950">1. Read and explain the query.</p>
+              <p className="mt-1">Use SQL Study when you want the requirement, SQL, notes, and oral checklist on one screen.</p>
+            </div>
+            <div className="rounded-xl border border-cyan-100 bg-white/90 p-3">
+              <p className="font-semibold text-slate-950">2. Switch to fast recall.</p>
+              <p className="mt-1">Use SQL Flashcards when you need quick concept recall without the full answer open in front of you.</p>
+            </div>
+            <div className="rounded-xl border border-cyan-100 bg-white/90 p-3">
+              <p className="font-semibold text-slate-950">3. Finish with spoken explanation.</p>
+              <p className="mt-1">Use SQL Mock Oral after you can explain the joins, filters, grouping, and output clearly out loud.</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SecondaryButton onClick={() => navigate('/sql-study')}>Open SQL Study</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-flashcards')}>Recall Concepts</SecondaryButton>
+          </div>
+        </Card>
+        <Card className="border-slate-200 bg-gradient-to-br from-white to-slate-50/70">
+          <h2 className="text-xl font-bold text-slate-950">ERD tools are backup only</h2>
+          <p className="mt-2 text-slate-600">
+            The main navigation stays SQL-first on purpose. Open ERD reference only if a bridge table, foreign key path, or subtype link is blocking your SQL explanation.
+          </p>
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+            <p className="font-semibold text-slate-950">Good reason to open ERD reference</p>
+            <p className="mt-1">"I know the query logic, but I need to confirm which table owns the foreign key before I explain the JOIN."</p>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SecondaryButton onClick={() => navigate('/study/cheat-sheet')}>ERD Cheat Sheet</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/study/erd-visual')}>Visual ERD</SecondaryButton>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-6">
+        <SectionHeader title="SQL Skill Coverage" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {categoryProgress.map(({ category, mastery, mastered, total }) => (
+            <Card
+              key={category}
+              className={
+                mastery >= 0.75
+                  ? 'border-emerald-200'
+                  : mastery >= 0.4
+                    ? 'border-amber-200'
+                    : 'border-rose-100'
+              }
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-950">{category}</h3>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {mastered} of {total} requirements feel strong in this SQL skill area.
+                  </p>
+                </div>
+                <ProgressBadge value={mastery} />
+              </div>
+              <ProgressBar value={mastery} className="mt-5" />
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <div className="hidden">
         <SectionHeader title="🗂️ Domain mastery" />
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {analytics.domainProgress.map(({ domain, mastery }) => (
@@ -352,7 +457,7 @@ function Dashboard({
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+      <div className="hidden">
         <Card className="border-red-100 bg-gradient-to-br from-white to-red-50/30">
           <h2 className="text-xl font-bold text-slate-950">🎯 Weak areas</h2>
           <ItemList empty="🎉 No missed items yet — keep it up!" items={analytics.weakItems} navigate={navigate} />
@@ -376,6 +481,186 @@ function Dashboard({
               ))}
             </div>
           )}
+        </Card>
+      </div>
+    </Page>
+  );
+}
+
+function SqlStudyPlan({
+  navigate,
+  progressStore,
+}: {
+  navigate: Navigate;
+  progressStore: ReturnType<typeof useProgressStore>;
+}) {
+  const weakSql = [...sqlRequirements]
+    .map((req) => ({ req, progress: getItemProgress(progressStore.progress, req.id) }))
+    .sort((a, b) => a.progress.mastery - b.progress.mastery)[0];
+  const lowCoverage = sqlRequirements.find((req) => getItemProgress(progressStore.progress, req.id).attempts === 0);
+
+  const todayPlan = [
+    {
+      label: 'Warm-up',
+      action: lowCoverage ? `Open SQL Games and review clause patterns for ${lowCoverage.title}.` : 'Open SQL Flashcards and run one recall loop.',
+      route: lowCoverage ? '/sql-games' : '/sql-flashcards',
+    },
+    {
+      label: 'Drill',
+      action: weakSql ? `Open SQL Study and explain ${weakSql.req.title} out loud in Night Before mode.` : 'Open SQL Study and practice one weak requirement.',
+      route: '/sql-study',
+    },
+    {
+      label: 'Mock Oral',
+      action: 'Run one SQL Mock Oral prompt and score checklist coverage immediately.',
+      route: '/sql-mock-oral',
+    },
+  ];
+
+  const weekly = [
+    ['Monday', 'SQL foundations: SELECT, FROM, WHERE, JOIN, aliases'],
+    ['Tuesday', 'JOIN-heavy requirements and table-path explanations'],
+    ['Wednesday', 'Aggregations: GROUP BY, HAVING, ORDER BY, LIMIT'],
+    ['Thursday AM', 'Night Before mode only: titles, business meaning, top 3 professor questions'],
+    ['Thursday PM', 'AWS connection check + one final mock oral'],
+  ];
+
+  const guide = [
+    ['SQL Study', 'Deep requirement walkthrough with checklist and Night Before toggle.'],
+    ['SQL Games', 'Short drills for clause patterns, bug spotting, and rapid recall.'],
+    ['SQL Flashcards', 'Fast recall for note-level concepts.'],
+    ['SQL Mock Oral', 'Type and score exam-style explanations.'],
+    ['SQL Games', 'Interactive modes: matching, bug hunter, scramble, professor sim.'],
+    ['ERD Vault', 'Reference-only space for entity/relationship refreshers.'],
+  ];
+
+  return (
+    <Page title="Study Plan" eyebrow={`${percent(progressStore.progress.overallReadiness)} readiness`}>
+      <Card className="mb-6 border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50">
+        <h2 className="text-xl font-bold text-slate-950">Today's Plan</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {todayPlan.map((item) => (
+            <button key={item.label} onClick={() => navigate(item.route)} className="rounded-xl border border-pink-100 bg-white p-3 text-left hover:border-pink-300">
+              <p className="text-xs font-bold uppercase tracking-wide text-pink-600">{item.label}</p>
+              <p className="mt-2 text-sm font-semibold text-slate-900">{item.action}</p>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="mb-6 border-slate-200">
+        <h2 className="text-xl font-bold text-slate-950">Weekly Overview</h2>
+        <div className="mt-4 grid gap-2 md:grid-cols-5">
+          {weekly.map(([day, focus]) => (
+            <div key={day} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{day}</p>
+              <p className="mt-2 text-sm text-slate-800">{focus}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="border-slate-200">
+        <h2 className="text-xl font-bold text-slate-950">Feature Guide</h2>
+        <div className="mt-4 grid gap-2 md:grid-cols-2">
+          {guide.map(([name, desc]) => (
+            <div key={name} className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="font-semibold text-slate-900">{name}</p>
+              <p className="mt-1 text-sm text-slate-600">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </Page>
+  );
+}
+
+function SqlErdBackupReference({ navigate, progressStore }: { navigate: Navigate; progressStore: ReturnType<typeof useProgressStore> }) {
+  return (
+    <Page
+      title="ERD Backup Reference"
+      eyebrow="Open this only when SQL explanation gets blocked by schema structure"
+      action={<SecondaryButton onClick={() => navigate('/sql-study')}>Back to SQL Study</SecondaryButton>}
+    >
+      <Card className="mb-5 border-pink-200 bg-gradient-to-r from-pink-50 to-amber-50">
+        <h2 className="text-xl font-bold text-slate-950">Use this page only as a structure reset</h2>
+        <p className="mt-2 text-slate-700">
+          If you get stuck because you cannot remember which table connects to which, confirm the schema path here and then go straight back to the SQL requirement.
+        </p>
+        <div className="mt-3 grid grid-cols-5 gap-1 text-center text-[11px] font-bold text-slate-500">
+          <span className="rounded-lg bg-white/80 p-1">Purpose</span>
+          <span className="rounded-lg bg-white/80 p-1">Keys</span>
+          <span className="rounded-lg bg-white/80 p-1">Links</span>
+          <span className="rounded-lg bg-white/80 p-1">Cardinality</span>
+          <span className="rounded-lg bg-white/80 p-1">FK logic</span>
+        </div>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <h2 className="text-xl font-bold text-slate-950">Domain Mastery</h2>
+          <div className="mt-4 grid gap-2">
+            {progressStore.analytics.domainProgress.map(({ domain, mastery }) => (
+              <button key={domain.id} onClick={() => navigate(`/study/domains/${domain.id}`)} className="rounded-lg border border-line p-3 text-left hover:border-blue-300">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold text-slate-900">{domain.name}</span>
+                  <span className="text-sm font-semibold text-slate-500">{percent(mastery)}</span>
+                </div>
+                <ProgressBar value={mastery} className="mt-2" />
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className="text-xl font-bold text-slate-950">FK placement rules</h2>
+          <ul className="mt-4 space-y-3 text-slate-700">
+            {fkPlacementRules.map((rule) => (
+              <li key={rule} className="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+                {rule}
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card>
+          <h2 className="text-xl font-bold text-slate-950">Associative entities to remember</h2>
+          <div className="mt-4 grid gap-3">
+            {associativeEntities.map((bridge) => (
+              <div key={bridge.id} className="rounded-xl border border-line p-3">
+                <strong className="text-slate-950">{bridge.name}</strong>
+                <p className="mt-1 text-sm text-slate-600">{bridge.description}</p>
+                <p className="mt-2 text-sm text-slate-500">Resolves: {bridge.resolves.map(getEntityName).join(' + ')}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className="text-xl font-bold text-slate-950">Subtype reminders</h2>
+          <div className="mt-4 grid gap-3">
+            {subtypes.map((subtype) => (
+              <div key={subtype.id} className="rounded-xl border border-line p-3">
+                <strong className="text-slate-950">
+                  {getEntityName(subtype.subtypeId)} {'->'} {getEntityName(subtype.supertypeId)}
+                </strong>
+                <p className="mt-1 text-sm text-slate-600">{subtype.description}</p>
+                <p className="mt-2 font-mono text-sm text-slate-700">Shared key: {subtype.primaryKey.join(', ')}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <h2 className="text-xl font-bold text-slate-950">Return to SQL quickly</h2>
+          <p className="mt-2 text-slate-600">
+            Use the backup reference only long enough to confirm the table path. Then go back and explain the SQL requirement out loud.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <SecondaryButton onClick={() => navigate('/sql-study')}>SQL Study</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/study/erd-visual')}>Visual ERD</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-mock-oral')}>SQL Mock Oral</SecondaryButton>
+          </div>
         </Card>
       </div>
     </Page>
@@ -1775,7 +2060,7 @@ function ReviewMistakes({
       <Card className="mb-4 border-pink-200 bg-pink-50">
         <h2 className="text-xl font-bold text-slate-950">Starred hard items</h2>
         {favorites.length === 0 ? (
-          <p className="mt-3 text-slate-700">No starred items yet. Use “Star Hard Item” on confusing entities, relationships, bridges, or subtypes.</p>
+          <p className="mt-3 text-slate-700">No starred items yet. Star SQL requirements, mock oral prompts, or ERD artifacts you want to revisit quickly.</p>
         ) : (
           <div className="mt-4 grid gap-2">
             {favorites.map((id) => (
@@ -2608,7 +2893,7 @@ function Page({
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div className="layout-safe">
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           {eyebrow && <p className="text-sm font-semibold uppercase tracking-wide text-pink-600">{eyebrow}</p>}
@@ -2617,6 +2902,50 @@ function Page({
         {action}
       </header>
       {children}
+    </div>
+  );
+}
+
+function ElegantExamCountdown({ readiness, nextFocus }: { readiness: number; nextFocus: string }) {
+  const targetMs = new Date(2026, 3, 16, 18, 45, 0, 0).getTime();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const remaining = Math.max(0, targetMs - nowMs);
+  const totalSeconds = Math.floor(remaining / 1000);
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+  const urgent = remaining <= 48 * 3_600_000;
+
+  return (
+    <div className="mt-4 rounded-xl border border-purple-100 bg-white/90 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-purple-700">SQL oral exam countdown</p>
+      <p className="mt-1 text-sm text-slate-500">Thursday, April 16, 2026 at 6:45 PM</p>
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        <CountdownTile label="Days" value={days} urgent={urgent} />
+        <CountdownTile label="Hours" value={hours} urgent={urgent} />
+        <CountdownTile label="Minutes" value={minutes} urgent={urgent} />
+        <CountdownTile label="Seconds" value={seconds} urgent={urgent} />
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-2 text-xs text-slate-600">
+        <span>Readiness: {percent(readiness)}</span>
+        <span className="truncate">Today: {nextFocus}</span>
+      </div>
+    </div>
+  );
+}
+
+function CountdownTile({ label, value, urgent }: { label: string; value: number; urgent: boolean }) {
+  return (
+    <div className={`rounded-lg border border-slate-200 bg-slate-50 px-2 py-3 text-center ${urgent ? 'animate-pulse' : ''}`}>
+      <p className="text-2xl font-extrabold text-slate-950">{String(value).padStart(2, '0')}</p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
     </div>
   );
 }
@@ -2755,7 +3084,7 @@ function SelectBox({ label, children }: { label: string; children: React.ReactNo
 }
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <section className={`card-hover-magic rounded-xl border border-line bg-white/95 p-5 shadow-soft ${className}`}>{children}</section>;
+  return <section className={`layout-safe card-hover-magic rounded-xl border border-line bg-white/95 p-5 shadow-soft ${className}`}>{children}</section>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -3125,12 +3454,15 @@ function relationshipFollowUp(relationship: Relationship) {
 }
 
 function itemLabel(id: string) {
+  const sqlReq = sqlRequirements.find((req) => req.id === id);
+  if (sqlReq) return sqlReq.title;
   if (entityById[id]) return entityById[id].name;
   if (relationshipById[id]) return relationshipLabel(relationshipById[id]);
   return id;
 }
 
 function itemRoute(id: string) {
+  if (sqlRequirements.some((req) => req.id === id)) return '/sql-study';
   if (entityById[id]) return `/study/entities/${id}`;
   if (relationshipById[id]) return `/study/relationships/${id}`;
   if (associativeById[id]) return `/study/associative-entities/${id}`;

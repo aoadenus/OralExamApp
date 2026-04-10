@@ -22,6 +22,24 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.layout-safe {
+  min-width: 0;
+}
+
+.layout-safe h1,
+.layout-safe h2,
+.layout-safe h3,
+.layout-safe h4,
+.layout-safe p,
+.layout-safe span,
+.layout-safe li,
+.layout-safe button,
+.layout-safe a,
+.layout-safe label {
+  overflow-wrap: anywhere;
 }
 
 button,
@@ -309,12 +327,12 @@ select:focus-visible {
 
 /* Card hover magic */
 .card-hover-magic {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .card-hover-magic:hover {
-  transform: translateY(-2px) scale(1.01);
-  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
 /* Streak badge glow */
