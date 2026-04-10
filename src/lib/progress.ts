@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { domains, entities, relationships } from './content';
-import type { ItemProgress, MasteryResult, MockOralHistoryItem, ProgressState, SettingsState, WeakSpot, StudySession, ErrorCategory } from '../types';
+import type { ItemProgress, MasteryResult, MockOralHistoryItem, ProgressState, SettingsState, WeakSpot, StudySession, ErrorCategory, SqlOralSession } from '../types';
 
 const STORAGE_KEY = 'restaurant-sql-oral-trainer-progress-v2';
 
@@ -10,8 +10,11 @@ const defaultSettings: SettingsState = {
   reducedMotion: false,
   fontScale: 'md',
   theme: 'light',
-  examDate: '2026-04-10',
+  examDate: '2026-04-16',
   dailyGoalMinutes: 15,
+  awsHost: '',
+  awsUser: '',
+  awsDatabase: '',
 };
 
 export function createDefaultProgress(): ProgressState {
@@ -29,6 +32,7 @@ export function createDefaultProgress(): ProgressState {
     totalStudyTimeMs: 0,
     favoriteItemIds: [],
     acknowledgedMilestones: [],
+    sqlOralSessions: [],
   };
 }
 
@@ -82,6 +86,13 @@ export function useProgressStore() {
     setProgress((current) => ({
       ...current,
       mockOrals: [session, ...current.mockOrals].slice(0, 20),
+    }));
+  }, []);
+
+  const saveSqlOralSession = useCallback((session: SqlOralSession) => {
+    setProgress((current) => ({
+      ...current,
+      sqlOralSessions: [session, ...(current.sqlOralSessions ?? [])].slice(0, 20),
     }));
   }, []);
 
@@ -180,6 +191,7 @@ export function useProgressStore() {
     analytics,
     recordAttempt,
     saveMockOral,
+    saveSqlOralSession,
     updateSettings,
     resetAll,
     importProgress,
@@ -214,6 +226,7 @@ function normalizeProgress(progress: ProgressState): ProgressState {
     weakSpots: progress.weakSpots ?? {},
     favoriteItemIds: progress.favoriteItemIds ?? [],
     acknowledgedMilestones: progress.acknowledgedMilestones ?? [],
+    sqlOralSessions: progress.sqlOralSessions ?? [],
   };
 }
 

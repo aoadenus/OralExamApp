@@ -1,6 +1,6 @@
-# Bakery ERD Oral Trainer
+# Mama's Little Bakery SQL Oral Exam
 
-Solo study app for the Stratos / Group 8 CIS 4365 Oral Exam 1 ERD defense. It is built with Vite, React, TypeScript, Tailwind CSS, static JSON study content, and localStorage progress tracking.
+Solo study app for the Stratos / Group 8 CIS 4365 Oral Exam 1 SQL exam prep. It is built with Vite, React, TypeScript, Tailwind CSS, static JSON study content, and localStorage progress tracking.
 
 ## Run Locally
 

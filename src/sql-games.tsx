@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import sqlRequirementsData from './data/sql-requirements.json';
+import sqlRequirements from './data/sql-requirements';
 import { getItemProgress, masteryLabel } from './lib/progress';
 import type { MasteryResult, ProgressState, SqlRequirement } from './types';
 
@@ -11,8 +11,6 @@ type ProgressStoreLike = {
 };
 
 type GameMode = 'intro' | 'matching' | 'scramble' | 'bug-hunter' | 'professor';
-
-const sqlRequirements = sqlRequirementsData as SqlRequirement[];
 
 const modeCards: Array<{ mode: GameMode; title: string; subtitle: string }> = [
   { mode: 'intro', title: 'Intro to SQL Games', subtitle: 'Prime your mental model before timed practice.' },
@@ -27,29 +25,12 @@ export function SqlGamesLab({ navigate, progressStore }: { navigate: Navigate; p
 
   return (
     <section className="layout-safe space-y-4">
-      <header className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">RestaurantDB SQL Games</p>
-            <h1 className="text-2xl font-extrabold text-slate-950">Oral Exam Game Studio</h1>
-            <p className="mt-1 text-sm text-slate-600">Practice like an exam committee: precise language, faster recall, stronger SQL reasoning.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => navigate('/sql-study')}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Back to SQL Study
-            </button>
-            <button
-              onClick={() => navigate('/sql-mock-oral')}
-              className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-            >
-              Open SQL Mock Oral
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Compact header for side navigation layout */}
+<header className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+  <div className="flex items-center justify-between gap-2">
+    <h1 className="text-lg font-bold text-slate-950">SQL Games</h1>
+  </div>
+</header>
 
       <div className="grid gap-3 md:grid-cols-5">
         {modeCards.map((item) => (
@@ -117,6 +98,12 @@ function IntroSqlGames({
             className="rounded-lg border border-indigo-300 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
           >
             Open SQL Flashcards
+          </button>
+          <button
+            onClick={() => navigate('/sql-execution')}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Execution Lab
           </button>
           <button
             onClick={() => navigate('/sql-study')}

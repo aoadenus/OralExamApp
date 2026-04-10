@@ -240,6 +240,19 @@ export function buildOralQuestionRubric(question: OralQuestion, entity?: Entity,
   };
 }
 
+export function buildChecklistRubric(id: string, label: string, checklist: string[]): TextAnswerRubric {
+  return {
+    id,
+    label,
+    criteria: checklist.map((item, index) => ({
+      id: `${id}-item-${index}`,
+      label: item,
+      terms: importantTerms(item),
+      minMatches: 1,
+    })),
+  };
+}
+
 export function gradeToFivePointScore(grade: GradeResult) {
   return Math.round(grade.percentage * 5);
 }

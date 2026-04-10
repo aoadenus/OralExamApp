@@ -1,0 +1,379 @@
+Mama’s Little Bakery
+All 15 Functional Requirements and SQL Scripts
+CIS 4365 – Database Management
+Professor: Dr. Renjie Hu
+Student: Adetutu (Tutu) Adenusi | Student ID: 2180098
+Date: April 10, 2026
+Source note. The functionality wording below follows the Mama’s Little Bakery project requirements. The SQL scripts are preserved exactly as extracted from the current teammate study-guide HTML so they can be reviewed in one place. A SQL dialect review is still recommended before final execution in MySQL Workbench/AWS.
+Purpose. This document consolidates the full set of 15 project functionalities and their current SQL scripts into a single reference file for project review, oral-exam study, and team discussion.
+Functionality Summary
+#	Functionality	Primary Purpose
+1	Customer Loyalty Analysis	Find customers who made >5 purchases but are NOT enrolled in the loyalty program.
+2	Inventory Shortage Alert	Identify ingredients that are below the minimum stock level.
+3	Top Employee Performance	Find the employee who processed the most orders last month.
+4	Supplier Expense Report	Calculate total expenses for each supplier in the last quarter.
+5	Product Review Insights	Identify the top 3 highest-rated and top 3 lowest-rated products.
+6	Promotion Effectiveness	Compare sales before and during promotion campaigns.
+7	Catering Revenue	Summarize total catering revenue by event type.
+8	Nutritional & Allergy Compliance	List products missing nutritional or allergy information.
+9	Sales by Product Category	Calculate total sales for each product category this quarter.
+10	Top Customers	Top 5 customers with the highest total spending in the past year.
+11	Best-Selling Products	Top 5 products by sales volume last month.
+12	Peak Sales Hours	Which time periods of the day have the most orders?
+13	Waste Management Metrics	Top 5 ingredients with the highest waste in the past year.
+14	Sales by Channel	Summarize orders and revenue by sales channel last month.
+15	Holiday Bestsellers	Most popular products sold during holiday seasons.
+ 
+Functionality 1: Customer Loyalty Analysis
+Task	Find customers who made >5 purchases but are NOT enrolled in the loyalty program.
+Expected Result	Customer names, contact information, and total purchases.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    c.CustomerID,
+    c.FirstName || ' ' || c.LastName AS customer_name,
+    c.Email,
+    c.Phone,
+    COUNT(o.OrderID) AS total_purchases
+FROM Customer c
+JOIN "Order" o ON o.CustomerID = c.CustomerID
+WHERE c.CustomerID NOT IN (
+    SELECT CustomerID FROM LoyaltyProgram
+)
+AND o.Status IN ('Completed','Delivered')
+GROUP BY c.CustomerID, c.FirstName, c.LastName, c.Email, c.Phone
+HAVING COUNT(o.OrderID) > 5
+ORDER BY total_purchases DESC;
+ 
+Functionality 2: Inventory Shortage Alert
+Task	Identify ingredients that are below the minimum stock level.
+Expected Result	Ingredient name, current stock, minimum stock, and shortage quantity.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    i.IngredientName,
+    inv.CurrentStock AS current_stock,
+    inv.ReorderThreshold AS minimum_stock,
+    i.UnitOfMeasure AS unit,
+    ROUND((inv.ReorderThreshold - inv.CurrentStock)::numeric, 2) AS shortage
+FROM Inventory inv
+JOIN Ingredient i ON i.IngredientID = inv.IngredientID
+WHERE inv.CurrentStock < inv.ReorderThreshold
+ORDER BY shortage DESC;
+ 
+Functionality 3: Top Employee Performance
+Task	Find the employee who processed the most orders last month.
+Expected Result	Employee name, employee ID, role, and order count.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    e.EmployeeID,
+    e.FirstName || ' ' || e.LastName AS employee_name,
+    r.RoleName,
+    COUNT(oa.OrderID) AS order_count
+FROM OrderAssignment oa
+JOIN Employee e ON e.EmployeeID = oa.EmployeeID
+JOIN Role r ON r.RoleID = e.RoleID
+JOIN "Order" o ON o.OrderID = oa.OrderID
+WHERE o.OrderDate >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+  AND o.OrderDate <  DATE_TRUNC('month', CURRENT_DATE)
+GROUP BY e.EmployeeID, e.FirstName, e.LastName, r.RoleName
+ORDER BY order_count DESC
+LIMIT 5;
+ 
+Functionality 4: Supplier Expense Report
+Task	Calculate total expenses for each supplier in the last quarter.
+Expected Result	Supplier name, contact name, invoice count, and total expense.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    s.SupplierName,
+    s.ContactName,
+    COUNT(inv.InvoiceID) AS invoice_count,
+    SUM(inv.TotalAmount) AS total_expense
+FROM Invoice inv
+JOIN Supplier s ON s.SupplierID = inv.SupplierID
+WHERE inv.InvoiceDate >= DATE_TRUNC('quarter', CURRENT_DATE)
+  AND inv.InvoiceDate <  DATE_TRUNC('quarter', CURRENT_DATE) + INTERVAL '3 months'
+GROUP BY s.SupplierID, s.SupplierName, s.ContactName
+ORDER BY total_expense DESC;
+ 
+Functionality 5: Product Review Insights
+Task	Identify the top 3 highest-rated and top 3 lowest-rated products.
+Expected Result	Product name, average rating, review count, and top-rated/lowest-rated category.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+(
+  SELECT
+      p.ProductName,
+      ROUND(AVG(rt.Score)::numeric, 2) AS avg_rating,
+      COUNT(rv.ReviewID) AS review_count,
+      'Top Rated' AS category
+  FROM Review rv
+  JOIN Product p ON p.ProductID = rv.ProductID
+  JOIN Rating rt ON rt.RatingID = rv.RatingID
+  GROUP BY p.ProductID, p.ProductName
+  HAVING COUNT(rv.ReviewID) >= 2
+  ORDER BY avg_rating DESC, review_count DESC
+  LIMIT 3
+)
+UNION ALL
+(
+  SELECT
+      p.ProductName,
+      ROUND(AVG(rt.Score)::numeric, 2) AS avg_rating,
+      COUNT(rv.ReviewID) AS review_count,
+      'Lowest Rated' AS category
+  FROM Review rv
+  JOIN Product p ON p.ProductID = rv.ProductID
+  JOIN Rating rt ON rt.RatingID = rv.RatingID
+  GROUP BY p.ProductID, p.ProductName
+  HAVING COUNT(rv.ReviewID) >= 2
+  ORDER BY avg_rating ASC, review_count DESC
+  LIMIT 3
+);
+ 
+Functionality 6: Promotion Effectiveness
+Task	Compare sales before and during promotion campaigns.
+Expected Result	Product name, promotion name, sales before promotion, sales during promotion, and growth rate.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+WITH promo_products AS (
+    SELECT
+        pp.ProductID,
+        p.ProductName,
+        pr.PromotionName,
+        pr.StartDate AS promo_start,
+        pr.EndDate AS promo_end,
+        pr.StartDate - INTERVAL '30 days' AS before_start,
+        pr.StartDate - INTERVAL '1 day' AS before_end
+    FROM ProductPromotion pp
+    JOIN Product p ON p.ProductID = pp.ProductID
+    JOIN Promotion pr ON pr.PromotionID = pp.PromotionID
+    WHERE pr.StartDate >= '2026-01-01'
+),
+before_sales AS (
+    SELECT pp.ProductID, pp.PromotionName,
+           COALESCE(SUM(ol.Quantity), 0) AS qty_before
+    FROM promo_products pp
+    LEFT JOIN OrderLine ol ON ol.ProductID = pp.ProductID
+    LEFT JOIN "Order" o ON o.OrderID = ol.OrderID
+        AND o.OrderDate::date BETWEEN pp.before_start AND pp.before_end
+        AND o.Status IN ('Completed','Delivered')
+    GROUP BY pp.ProductID, pp.PromotionName
+),
+during_sales AS (
+    SELECT pp.ProductID, pp.PromotionName,
+           COALESCE(SUM(ol.Quantity), 0) AS qty_during
+    FROM promo_products pp
+    LEFT JOIN OrderLine ol ON ol.ProductID = pp.ProductID
+    LEFT JOIN "Order" o ON o.OrderID = ol.OrderID
+        AND o.OrderDate::date BETWEEN pp.promo_start AND pp.promo_end
+        AND o.Status IN ('Completed','Delivered')
+    GROUP BY pp.ProductID, pp.PromotionName
+)
+SELECT
+    pp.ProductName,
+    pp.PromotionName,
+    bs.qty_before AS sales_before,
+    ds.qty_during AS sales_during,
+    CASE WHEN bs.qty_before > 0
+         THEN ROUND(((ds.qty_during - bs.qty_before)::numeric / bs.qty_before) * 100, 1)
+         ELSE NULL
+    END AS growth_rate_pct
+FROM promo_products pp
+JOIN before_sales bs ON bs.ProductID = pp.ProductID AND bs.PromotionName = pp.PromotionName
+JOIN during_sales ds ON ds.ProductID = pp.ProductID AND ds.PromotionName = pp.PromotionName
+ORDER BY pp.PromotionName, pp.ProductName;
+ 
+Functionality 7: Catering Revenue
+Task	Summarize total catering revenue by event type.
+Expected Result	Event type, number of catering orders, total revenue, and average revenue per event.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    et.TypeName AS event_type,
+    COUNT(c.CateringID) AS number_of_orders,
+    SUM(c.TotalCost) AS total_revenue,
+    ROUND(AVG(c.TotalCost)::numeric, 2) AS avg_revenue_per_event
+FROM Catering c
+JOIN Event e ON e.EventID = c.EventID
+JOIN EventType et ON et.EventTypeID = e.EventTypeID
+GROUP BY et.EventTypeID, et.TypeName
+ORDER BY total_revenue DESC;
+ 
+Functionality 8: Nutritional & Allergy Compliance
+Task	List products missing nutritional or allergy information.
+Expected Result	Product name plus the type of missing nutritional or allergy information.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    p.ProductName,
+    CASE WHEN ni.NutritionalInfoID IS NULL
+         THEN 'Missing nutritional info'
+         ELSE 'Has nutritional info'
+    END AS nutritional_status,
+    COALESCE(
+        STRING_AGG(DISTINCT ai.AllergenName, ', '),
+        'No known allergens'
+    ) AS allergens_from_recipe
+FROM Product p
+LEFT JOIN NutritionalInfo ni ON ni.ProductID = p.ProductID
+LEFT JOIN Recipe r ON r.ProductID = p.ProductID
+LEFT JOIN AllergyInfo ai ON ai.IngredientID = r.IngredientID
+WHERE ni.NutritionalInfoID IS NULL
+   OR ai.AllergyInfoID IS NOT NULL
+GROUP BY p.ProductID, p.ProductName, ni.NutritionalInfoID
+ORDER BY
+    CASE WHEN ni.NutritionalInfoID IS NULL THEN 0 ELSE 1 END,
+    p.ProductName;
+ 
+Functionality 9: Sales by Product Category
+Task	Calculate total sales for each product category this quarter.
+Expected Result	Category name, order count, total units sold, and total sales.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    pc.CategoryName,
+    COUNT(DISTINCT o.OrderID) AS order_count,
+    SUM(ol.Quantity) AS total_units_sold,
+    SUM(ol.Quantity * ol.UnitPrice) AS total_sales
+FROM OrderLine ol
+JOIN "Order" o ON o.OrderID = ol.OrderID
+JOIN Product p ON p.ProductID = ol.ProductID
+JOIN ProductCategory pc ON pc.CategoryID = p.CategoryID
+WHERE o.OrderDate >= DATE_TRUNC('quarter', CURRENT_DATE)
+  AND o.OrderDate <  DATE_TRUNC('quarter', CURRENT_DATE) + INTERVAL '3 months'
+  AND o.Status IN ('Completed','Delivered')
+GROUP BY pc.CategoryID, pc.CategoryName
+ORDER BY total_sales DESC;
+ 
+Functionality 10: Top Customers
+Task	Top 5 customers with the highest total spending in the past year.
+Expected Result	Customer name, email, total orders, and total spending.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    c.CustomerID,
+    c.FirstName || ' ' || c.LastName AS customer_name,
+    c.Email,
+    COUNT(DISTINCT o.OrderID) AS total_orders,
+    SUM(o.TotalAmount) AS total_spending
+FROM Customer c
+JOIN "Order" o ON o.CustomerID = c.CustomerID
+WHERE o.OrderDate >= CURRENT_DATE - INTERVAL '1 year'
+  AND o.Status IN ('Completed','Delivered')
+GROUP BY c.CustomerID, c.FirstName, c.LastName, c.Email
+ORDER BY total_spending DESC
+LIMIT 5;
+ 
+Functionality 11: Best-Selling Products
+Task	Top 5 products by sales volume last month.
+Expected Result	Product name, category name, total quantity sold, and total revenue.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    p.ProductName,
+    pc.CategoryName,
+    SUM(ol.Quantity) AS total_quantity_sold,
+    SUM(ol.Quantity * ol.UnitPrice) AS total_revenue
+FROM OrderLine ol
+JOIN "Order" o ON o.OrderID = ol.OrderID
+JOIN Product p ON p.ProductID = ol.ProductID
+JOIN ProductCategory pc ON pc.CategoryID = p.CategoryID
+WHERE o.OrderDate >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+  AND o.OrderDate <  DATE_TRUNC('month', CURRENT_DATE)
+  AND o.Status IN ('Completed','Delivered')
+GROUP BY p.ProductID, p.ProductName, pc.CategoryName
+ORDER BY total_quantity_sold DESC
+LIMIT 5;
+ 
+Functionality 12: Peak Sales Hours
+Task	Which time periods of the day have the most orders?
+Expected Result	Time range, order count, total revenue, and average order value.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    CASE
+        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 6 AND 7   THEN '06:00-08:00'
+        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 8 AND 9   THEN '08:00-10:00'
+        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 10 AND 11 THEN '10:00-12:00'
+        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 12 AND 13 THEN '12:00-14:00'
+        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 14 AND 15 THEN '14:00-16:00'
+        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 16 AND 17 THEN '16:00-18:00'
+        WHEN EXTRACT(HOUR FROM o.OrderDate) BETWEEN 18 AND 19 THEN '18:00-20:00'
+        ELSE 'Other'
+    END AS time_range,
+    COUNT(o.OrderID) AS order_count,
+    SUM(o.TotalAmount) AS total_revenue,
+    ROUND(AVG(o.TotalAmount)::numeric, 2) AS avg_order_value
+FROM "Order" o
+WHERE o.Status IN ('Completed','Delivered')
+GROUP BY time_range
+ORDER BY order_count DESC;
+ 
+Functionality 13: Waste Management Metrics
+Task	Top 5 ingredients with the highest waste in the past year.
+Expected Result	Ingredient name, unit, total waste, waste incidents, and waste reasons.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    i.IngredientName,
+    i.UnitOfMeasure AS unit,
+    SUM(wl.QuantityWasted) AS total_waste,
+    COUNT(wl.WasteLogID) AS waste_incidents,
+    STRING_AGG(DISTINCT wl.Reason, '; ') AS reasons
+FROM WasteLog wl
+JOIN Ingredient i ON i.IngredientID = wl.IngredientID
+WHERE wl.WasteDate >= CURRENT_DATE - INTERVAL '1 year'
+GROUP BY i.IngredientID, i.IngredientName, i.UnitOfMeasure
+ORDER BY total_waste DESC
+LIMIT 5;
+ 
+Functionality 14: Sales by Channel
+Task	Summarize orders and revenue by sales channel last month.
+Expected Result	Sales channel, number of orders, sales revenue, and percentage of total sales.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+WITH channel_totals AS (
+    SELECT
+        SUM(TotalAmount) AS grand_total
+    FROM "Order"
+    WHERE Status IN ('Completed','Delivered')
+      AND OrderDate >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+      AND OrderDate <  DATE_TRUNC('month', CURRENT_DATE)
+)
+SELECT
+    o.SalesChannel AS channel,
+    COUNT(o.OrderID) AS number_of_orders,
+    SUM(o.TotalAmount) AS sales_revenue,
+    ROUND(
+        (SUM(o.TotalAmount) / ct.grand_total * 100)::numeric, 1
+    ) AS pct_of_total
+FROM "Order" o
+CROSS JOIN channel_totals ct
+WHERE o.Status IN ('Completed','Delivered')
+  AND o.OrderDate >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+  AND o.OrderDate <  DATE_TRUNC('month', CURRENT_DATE)
+GROUP BY o.SalesChannel, ct.grand_total
+ORDER BY sales_revenue DESC;
+ 
+Functionality 15: Holiday Bestsellers
+Task	Most popular products sold during holiday seasons.
+Expected Result	Holiday name, product name, sales volume, and total revenue.
+Script Status	Current extracted study-guide script preserved verbatim for review.
+SQL Script
+SELECT
+    h.HolidayName,
+    p.ProductName,
+    SUM(ol.Quantity) AS total_sold,
+    SUM(ol.Quantity * ol.UnitPrice) AS total_revenue
+FROM HolidaySale hs
+JOIN Holiday h ON h.HolidayID = hs.HolidayID
+JOIN "Order" o ON o.OrderID = hs.OrderID
+JOIN OrderLine ol ON ol.OrderID = o.OrderID
+JOIN Product p ON p.ProductID = ol.ProductID
+WHERE o.Status IN ('Completed','Delivered')
+GROUP BY h.HolidayID, h.HolidayName, p.ProductID, p.ProductName
+ORDER BY h.HolidayName, total_sold DESC;
+

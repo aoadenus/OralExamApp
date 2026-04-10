@@ -18,10 +18,18 @@ import {
   relationshipsForDomain,
   subtypes,
 } from './lib/content';
-import sqlRequirementsData from './data/sql-requirements.json';
+import sqlRequirements from './data/sql-requirements';
 import { SqlGamesLab } from './sql-games';
-import { SqlExamBanner, SqlFlashcards, SqlMockOral, SqlStudyGuide } from './sql-trainer';
+import { SqlExecutionLab, SqlProfessorMode, SqlTableInspector } from './sql-oral-lab';
+import { SqlBasicsFlashcards, SqlExamBanner, SqlFlashcards, SqlMockOral, SqlStudyGuide } from './sql-trainer';
 import { buildWeakSpotAnalytics, calculateTodayStudyTime, getItemProgress, masteryLabel, useProgressStore } from './lib/progress';
+import { ArcadeLobby } from './arcade/ArcadeLobby';
+import { ArcadeScoreboard } from './arcade/ArcadeScoreboard';
+import { ClauseBlasterGame } from './arcade/games/ClauseBlaster';
+import { BossRushGame } from './arcade/games/BossRush';
+import { JoinJuggernautGame } from './arcade/games/JoinJuggernaut';
+import { TimeWindowRushGame } from './arcade/games/TimeWindowRush';
+import { AggregationForgeGame } from './arcade/games/AggregationForge';
 import { pickAssociativeEntity, pickEntity, pickRelationship } from './lib/questions';
 import {
   buildEntityRubric,
@@ -62,12 +70,17 @@ type MatchingPrompt = {
 };
 
 const navItems = [
+  { label: 'Study Plan', path: '/study' },
   { label: 'Dashboard', path: '/' },
+  { label: '🕹️ Stratos Arcade', path: '/arcade' },
   { label: 'SQL Study', path: '/sql-study' },
-  { label: 'SQL Flashcards', path: '/sql-flashcards' },
+  { label: 'Execution Lab', path: '/sql-execution' },
+  { label: 'Professor Mode', path: '/sql-professor' },
+  { label: 'Table Inspector', path: '/sql-tables' },
+  { label: 'SQL Basics', path: '/sql-basics' },
+  { label: 'Query Flashcards', path: '/sql-flashcards' },
   { label: 'SQL Mock Oral', path: '/sql-mock-oral' },
   { label: 'SQL Games', path: '/sql-games' },
-  { label: 'Study Plan', path: '/study' },
   { label: 'Progress', path: '/progress' },
 ];
 
@@ -91,7 +104,6 @@ const fkPlacementRules = [
 ];
 const erdImageSrc = `${import.meta.env.BASE_URL}erd/group8-erd.png`;
 const erdPdfSrc = `${import.meta.env.BASE_URL}erd/group8-erd.pdf`;
-const sqlRequirements = sqlRequirementsData as SqlRequirement[];
 
 export default function App() {
   const route = useRoute();
@@ -122,10 +134,27 @@ function RouteRenderer({
   progressStore: ReturnType<typeof useProgressStore>;
 }) {
   if (path === '/') return <Dashboard navigate={navigate} progressStore={progressStore} />;
+
+  // Stratos Arcade routes
+  if (path === '/arcade') return <ArcadeLobby navigate={navigate} progress={progressStore.progress} />;
+  if (path === '/arcade/clause-blaster') return <ClauseBlasterGame navigate={navigate} progress={progressStore.progress} />;
+  if (path === '/arcade/boss-rush') return <BossRushGame navigate={navigate} progress={progressStore.progress} />;
+  if (path === '/arcade/join-juggernaut') return <JoinJuggernautGame navigate={navigate} progress={progressStore.progress} />;
+  if (path === '/arcade/time-window-rush') return <TimeWindowRushGame navigate={navigate} progress={progressStore.progress} />;
+  if (path === '/arcade/aggregation-forge') return <AggregationForgeGame navigate={navigate} progress={progressStore.progress} />;
+  if (path === '/arcade/scoreboard') return <ArcadeScoreboard navigate={navigate} progress={progressStore.progress} />;
+
   if (path === '/sql-study') return <SqlStudyGuide navigate={navigate} progressStore={progressStore} />;
+  if (path.startsWith('/sql-study/')) {
+    return <SqlStudyGuide navigate={navigate} progressStore={progressStore} initialRequirementId={lastPathPart(path)} />;
+  }
+  if (path === '/sql-execution') return <SqlExecutionLab navigate={navigate} progressStore={progressStore} />;
+  if (path === '/sql-professor') return <SqlProfessorMode navigate={navigate} progressStore={progressStore} />;
+  if (path === '/sql-tables') return <SqlTableInspector navigate={navigate} />;
   if (path === '/sql-rapid-fire') return <SqlStudyGuide navigate={navigate} progressStore={progressStore} initialRapidFire />;
   if (path === '/sql-games') return <SqlGamesLab navigate={navigate} progressStore={progressStore} />;
-  if (path === '/sql-flashcards') return <SqlFlashcards progressStore={progressStore} />;
+  if (path === '/sql-basics') return <SqlBasicsFlashcards navigate={navigate} progressStore={progressStore} />;
+  if (path === '/sql-flashcards') return <SqlFlashcards navigate={navigate} progressStore={progressStore} />;
   if (path === '/sql-mock-oral') return <SqlMockOral navigate={navigate} progressStore={progressStore} />;
   if (path === '/study') return <SqlStudyPlan navigate={navigate} progressStore={progressStore} />;
   if (path === '/study/flashcards') return <StudyFlashcards progressStore={progressStore} />;
@@ -172,7 +201,7 @@ function AppShell({ children, path, navigate }: { children: React.ReactNode; pat
       >
         <button className="mb-8 text-left group" onClick={() => navigate('/')}>
           <span className="mb-2 block text-2xl">🗄️</span>
-          <span className="block text-xs font-bold uppercase tracking-widest text-blue-500">RestaurantDB</span>
+          <span className="block text-xs font-bold uppercase tracking-widest text-blue-500">Mama's Little Bakery</span>
           <span
             className="block text-xl font-extrabold leading-tight"
             style={{
@@ -186,7 +215,7 @@ function AppShell({ children, path, navigate }: { children: React.ReactNode; pat
             <br />
             Trainer
           </span>
-          <span className="mt-1 block text-[11px] text-slate-400">ERD understood. SQL explanation first.</span>
+          <span className="mt-1 block text-[11px] text-slate-400">Explain the query. Defend the clauses.</span>
         </button>
         <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">SQL Prep</p>
         <nav aria-label="Primary navigation" className="space-y-1">
@@ -301,7 +330,7 @@ function Dashboard({
     sqlAttempted === 0
       ? 'Start in SQL Study and read all 15 requirements once before you score anything.'
       : sqlMastered < 6
-        ? 'Use SQL Flashcards for recall, then explain the weakest requirements out loud in SQL Study.'
+        ? 'Use SQL Basics first, then Query Flashcards, then explain the weakest requirements out loud in SQL Study.'
         : 'Run SQL Mock Oral and only use ERD reference if a table link blocks your explanation.';
 
   return (
@@ -348,8 +377,11 @@ function Dashboard({
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             <SecondaryButton onClick={() => navigate('/sql-study')}>SQL Study</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-execution')}>Execution Lab</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-professor')}>Professor Mode</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-basics')}>SQL Basics</SecondaryButton>
             <SecondaryButton onClick={() => navigate('/sql-games')}>SQL Games</SecondaryButton>
-            <SecondaryButton onClick={() => navigate('/sql-flashcards')}>SQL Flashcards</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-flashcards')}>Query Flashcards</SecondaryButton>
             <SecondaryButton onClick={() => navigate('/sql-mock-oral')}>SQL Mock Oral</SecondaryButton>
           </div>
         </Card>
@@ -380,16 +412,18 @@ function Dashboard({
             </div>
             <div className="rounded-xl border border-cyan-100 bg-white/90 p-3">
               <p className="font-semibold text-slate-950">2. Switch to fast recall.</p>
-              <p className="mt-1">Use SQL Flashcards when you need quick concept recall without the full answer open in front of you.</p>
+              <p className="mt-1">Use SQL Basics for clause order and core concepts, then Query Flashcards for requirement-specific recall.</p>
             </div>
             <div className="rounded-xl border border-cyan-100 bg-white/90 p-3">
-              <p className="font-semibold text-slate-950">3. Finish with spoken explanation.</p>
-              <p className="mt-1">Use SQL Mock Oral after you can explain the joins, filters, grouping, and output clearly out loud.</p>
+              <p className="font-semibold text-slate-950">3. Rehearse the exact exam flow.</p>
+              <p className="mt-1">Use Execution Lab for connection + query run, then Professor Mode for easy/hard follow-up answers.</p>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             <SecondaryButton onClick={() => navigate('/sql-study')}>Open SQL Study</SecondaryButton>
-            <SecondaryButton onClick={() => navigate('/sql-flashcards')}>Recall Concepts</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-execution')}>Run a Functionality</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-basics')}>SQL Basics</SecondaryButton>
+            <SecondaryButton onClick={() => navigate('/sql-flashcards')}>Query Recall</SecondaryButton>
           </div>
         </Card>
         <Card className="border-slate-200 bg-gradient-to-br from-white to-slate-50/70">
@@ -502,8 +536,8 @@ function SqlStudyPlan({
   const todayPlan = [
     {
       label: 'Warm-up',
-      action: lowCoverage ? `Open SQL Games and review clause patterns for ${lowCoverage.title}.` : 'Open SQL Flashcards and run one recall loop.',
-      route: lowCoverage ? '/sql-games' : '/sql-flashcards',
+      action: lowCoverage ? `Open SQL Games and review clause patterns for ${lowCoverage.title}.` : 'Open SQL Basics, then run one Query Flashcards loop.',
+      route: lowCoverage ? '/sql-games' : '/sql-basics',
     },
     {
       label: 'Drill',
@@ -512,8 +546,8 @@ function SqlStudyPlan({
     },
     {
       label: 'Mock Oral',
-      action: 'Run one SQL Mock Oral prompt and score checklist coverage immediately.',
-      route: '/sql-mock-oral',
+      action: 'Run one functionality in Execution Lab, then complete one Professor Mode round.',
+      route: '/sql-execution',
     },
   ];
 
@@ -527,10 +561,13 @@ function SqlStudyPlan({
 
   const guide = [
     ['SQL Study', 'Deep requirement walkthrough with checklist and Night Before toggle.'],
+    ['Execution Lab', 'Run a selected functionality query and inspect the returned result table.'],
+    ['Professor Mode', 'Random requirement simulation with reveal + hard follow-up questions.'],
+    ['SQL Basics', 'Core clause-order, filtering, grouping, and join flashcards for oral warm-up.'],
+    ['Table Inspector', 'Review table purpose, PK/FK, and which functionalities use each table.'],
     ['SQL Games', 'Short drills for clause patterns, bug spotting, and rapid recall.'],
-    ['SQL Flashcards', 'Fast recall for note-level concepts.'],
+    ['Query Flashcards', 'Fast recall tied to the 15 bakery functionality scripts.'],
     ['SQL Mock Oral', 'Type and score exam-style explanations.'],
-    ['SQL Games', 'Interactive modes: matching, bug hunter, scramble, professor sim.'],
     ['ERD Vault', 'Reference-only space for entity/relationship refreshers.'],
   ];
 
@@ -2222,6 +2259,56 @@ function SettingsScreen({ progressStore }: { progressStore: ReturnType<typeof us
               />
               <span className="mt-2 block text-sm text-slate-500">The dashboard compares this with today&apos;s study time.</span>
             </label>
+            <section className="rounded-lg border border-line p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold text-slate-950">AWS Exam Connection</h3>
+                  <p className="mt-1 text-sm text-slate-500">Saved locally and used to prefill the Execution Lab.</p>
+                </div>
+                <div className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Port 3306</div>
+              </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                <label className="text-sm text-slate-700">
+                  <span className="font-semibold">AWS Host</span>
+                  <input
+                    className="mt-2 w-full rounded-lg border border-line px-3 py-2"
+                    type="text"
+                    value={progressStore.progress.settings.awsHost ?? ''}
+                    onChange={(event) => progressStore.updateSettings({ awsHost: event.target.value })}
+                    placeholder="team8.cluster-xyz.us-east-1.rds.amazonaws.com"
+                  />
+                </label>
+                <label className="text-sm text-slate-700">
+                  <span className="font-semibold">DB Username</span>
+                  <input
+                    className="mt-2 w-full rounded-lg border border-line px-3 py-2"
+                    type="text"
+                    value={progressStore.progress.settings.awsUser ?? ''}
+                    onChange={(event) => progressStore.updateSettings({ awsUser: event.target.value })}
+                    placeholder="admin"
+                  />
+                </label>
+                <label className="text-sm text-slate-700">
+                  <span className="font-semibold">Database Name</span>
+                  <input
+                    className="mt-2 w-full rounded-lg border border-line px-3 py-2"
+                    type="text"
+                    value={progressStore.progress.settings.awsDatabase ?? ''}
+                    onChange={(event) => progressStore.updateSettings({ awsDatabase: event.target.value })}
+                    placeholder="restaurantdb"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Exam day cheat sheet</p>
+                <div className="mt-2 grid gap-1 font-mono text-xs sm:grid-cols-2">
+                  <span>Host: {progressStore.progress.settings.awsHost || 'not set'}</span>
+                  <span>Username: {progressStore.progress.settings.awsUser || 'not set'}</span>
+                  <span>Database: {progressStore.progress.settings.awsDatabase || 'not set'}</span>
+                  <span>Port: 3306</span>
+                </div>
+              </div>
+            </section>
           </div>
         </Card>
         <Card>

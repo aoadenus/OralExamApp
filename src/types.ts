@@ -6,6 +6,15 @@ export interface SqlNote {
   text: string;
 }
 
+export type SqlScriptSource = 'group_script' | 'teammate_html' | 'manual';
+export type SqlRequirementStatus = 'study-ready' | 'draft' | 'risky';
+export type SqlAnswerMode = 'typed' | 'out-loud';
+
+export interface SqlClauseBreakdown {
+  clause: string;
+  why: string;
+}
+
 export interface SqlRequirement {
   id: string;
   title: string;
@@ -18,12 +27,20 @@ export interface SqlRequirement {
   notes: SqlNote[];
   checklist: string[];
   businessMeaning?: string;
+  officialTask?: string;
+  currentScriptSource?: SqlScriptSource;
+  currentMeaning?: string;
+  expectedResultDescription?: string;
+  easyQuestion?: string;
+  hardQuestion?: string;
+  easyChecklist?: string[];
+  hardChecklist?: string[];
+  keyClauses?: string[];
+  knownRiskNotes?: string[];
+  status?: SqlRequirementStatus;
   expectedResultShape?: string[];
   oralQuestions?: string[];
-  clauseBreakdown?: Array<{
-    clause: string;
-    why: string;
-  }>;
+  clauseBreakdown?: SqlClauseBreakdown[];
 }
 
 export type Cardinality = '1:1' | '1:M' | 'M:N';
@@ -161,6 +178,28 @@ export interface StudySession {
 
 export type ErrorCategory = 'entity' | 'relationship' | 'fk-logic' | 'cardinality' | 'associative' | 'subtype';
 
+export interface SqlOralSession {
+  id: string;
+  startedAt: string;
+  requirementId: string;
+  executionScore: number;
+  easyScore: number;
+  hardScore: number;
+  deliveryScore: number;
+  total: number;
+  easyAnswerMode: SqlAnswerMode;
+  hardAnswerMode: SqlAnswerMode;
+  easyAnswer: string;
+  hardAnswer: string;
+  easyMatched: string[];
+  easyMissed: string[];
+  hardMatched: string[];
+  hardMissed: string[];
+  verdict: 'strong' | 'shaky' | 'needs-work';
+  coachNote: string;
+  durationSeconds?: number;
+}
+
 export interface SettingsState {
   soundEnabled: boolean;
   timerWarningsEnabled: boolean;
@@ -169,6 +208,9 @@ export interface SettingsState {
   theme: 'light' | 'dark' | 'system';
   examDate?: string;
   dailyGoalMinutes?: number;
+  awsHost?: string;
+  awsUser?: string;
+  awsDatabase?: string;
 }
 
 export interface ProgressState {
@@ -186,4 +228,5 @@ export interface ProgressState {
   lastStudySessionAt?: string;
   favoriteItemIds?: string[];
   acknowledgedMilestones?: number[];
+  sqlOralSessions?: SqlOralSession[];
 }
